@@ -6,64 +6,66 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Inter', sans-serif; }
         #canvas { width: 100vw; height: 100vh; position: relative; }
         
-        /* Hizalama Çizgileri */
-        .guide-line { position: absolute; display: none; border-top: 1px dashed #ff8c00; width: 100%; z-index: 5; }
-        
+        /* Profesyonel Kutular */
         .slot { 
-            width: 140px; height: 140px; background: linear-gradient(145deg, #1a1d24, #14161b);
-            border-radius: 8px; border: 1px solid #2d323e; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 140px; height: 140px; background: #16191f; border: 1px solid #2d323e;
+            border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        
-        .plus-icon { font-size: 32px; color: #fff; opacity: 0.6; font-weight: 200; }
-        .req-text { font-size: 13px; color: #fff; opacity: 0.6; margin-top: 5px; }
+        .plus-icon { font-size: 32px; color: #fff; opacity: 0.4; }
+        .req-text { font-size: 12px; color: #fff; opacity: 0.4; margin-top: 5px; text-transform: uppercase; }
 
-        .edit-mode .draggable { border: 1px dashed #00f2ea !important; cursor: move; }
-        .draggable { position: absolute; transition: box-shadow 0.2s; }
+        /* Sürükleme Modu Efektleri */
+        .edit-active { border: 2px dashed #00f2ea !important; z-index: 1000; }
+        .draggable { position: absolute; }
         
-        .user-avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #00f2ea; object-fit: cover; }
-        .user-name { margin-top: 10px; font-weight: bold; color: #fff; font-size: 14px; }
-        
-        #lion-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 10000; pointer-events: none; align-items: center; justify-content: center; }
+        .user-avatar { width: 70%; height: auto; border-radius: 50%; border: 2px solid #00f2ea; }
+        .user-name { color: #fff; font-size: 13px; margin-top: 10px; font-weight: 600; }
+
+        #lion-box { position: fixed; z-index: 9999; display: none; pointer-events: none; }
     </style>
 </head>
 <body>
-    <div id="guide" class="guide-line" style="top: 50%;"></div>
     <div id="canvas">
+        <div id="host-cam" class="draggable resizable" style="top:50px; left:50px;">
+            <img src="3333.jpeg" style="width:100%; border-radius:10px;">
+        </div>
         <div id="slots-layer"></div>
     </div>
-    <div id="lion-overlay"><video id="lion-vid" width="600"><source src="aslan.mp4"></video></div>
+    <div id="lion-box"><video id="lion-vid" width="500"><source src="aslan.mp4"></video></div>
 
 <script>
-    const socket = io();
-    
-    // 8 Koltuk oluştur (4x2 başlangıç düzeni)
+    const socket = io('https://tiktok-yayin.onrender.com');
+
+    // 8'li Koltuk Dizilimi
     for(let i=0; i<8; i++) {
-        const row = Math.floor(i / 2);
-        const col = i % 2;
         $('#slots-layer').append(`
-            <div id="slot${i}" class="draggable slot" style="top: ${100 + row*150}px; left: ${700 + col*150}px;">
-                <div class="content"><span class="plus-icon">+</span><div class="req-text">Request</div></div>
+            <div id="slot${i}" class="draggable resizable slot" style="top:${100 + (i*60)}px; right:100px;">
+                <span class="plus-icon">+</span><div class="req-text">Request</div>
             </div>
         `);
     }
 
-    $(".draggable").draggable({ disabled: true, 
-        drag: function() { $('#guide').show(); },
-        stop: function() { $('#guide').hide(); }
+    // Gelişmiş Sürükle-Bırak (Mıknatıs Özelliği ile)
+    $(function() {
+        $(".draggable").draggable({ 
+            disabled: true, 
+            snap: ".draggable", // Kutular birbirine yapışır
+            snapMode: "outer" 
+        });
+        $(".resizable").resizable({ disabled: true, aspectRatio: true });
     });
 
     socket.on('toggle_edit', (data) => {
-        const status = !data.status;
-        $(".draggable").draggable(data.status ? "enable" : "disable");
-        $('body').toggleClass('edit-mode', data.status);
+        $(".draggable").draggable(data.status ? "enable" : "disable").toggleClass('edit-active', data.status);
+        $(".resizable").resizable(data.status ? "enable" : "disable");
     });
 
     socket.on('update_host', (data) => {
-        const el = $(`#slot${data.slot} .content`);
+        const el = $(`#slot${data.slot}`);
         if(data.user) {
             el.html(`<img src="${data.user.avatar}" class="user-avatar"><div class="user-name">${data.user.name}</div>`);
         } else {
@@ -71,12 +73,10 @@
         }
     });
 
-    socket.on('lion_trigger', (data) => {
-        // Eğer target varsa o koltuğun üzerine aslanı taşıyabiliriz
-        $("#lion-overlay").fadeIn();
-        const v = document.getElementById('lion-vid');
-        v.play();
-        v.onended = () => $("#lion-overlay").fadeOut();
+    socket.on('lion_trigger', () => {
+        $("#lion-box").css({top: '20%', left: '25%'}).fadeIn();
+        document.getElementById('lion-vid').play();
+        document.getElementById('lion-vid').onended = () => $("#lion-box").fadeOut();
     });
 </script>
 </body>
