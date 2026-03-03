@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mode 1 - Host</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 0; overflow: hidden; 
+            background-color: #000; color: white;
+            font-family: 'Inter', sans-serif;
+            display: flex; width: 100vw; height: 100vh;
+        }
+
+        /* Sol Alan: Büyük Avatar/Görüntü Alanı */
+        #main-view {
+            flex: 1.2;
+            display: flex; align-items: flex-end; justify-content: center;
+            padding-bottom: 20px;
+            position: relative;
+        }
+        #main-view img { width: 95%; height: auto; border-radius: 15px; }
+
+        /* Sağ Alan: Dikey 8 Koltuk */
+        #guest-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: repeat(8, 1fr);
+            gap: 8px; padding: 12px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .slot {
+            background: #111; border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; border: 1px solid #222;
+        }
+
+        .slot-active { border-color: #444; background: #080808; }
+        .plus-icon { font-size: 20px; opacity: 0.2; }
+        .req-text { font-size: 8px; opacity: 0.2; text-transform: uppercase; margin-top: 2px; }
+        
+        .guest-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; margin-bottom: 5px; }
+        .guest-name { font-size: 9px; font-weight: bold; position: absolute; bottom: 5px; color: #888; }
+
+        /* Aslan Efekti Katmanı */
+        #lion-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; z-index: 1000; pointer-events: none;
+            align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-view">
+        <img src="3333.jpeg" alt="Host">
+    </div>
+    <div id="guest-grid" id="slots-container"></div>
+    
+    <div id="lion-overlay">
+        <video id="lion-vid" width="100%"><source src="aslan.mp4" type="video/mp4"></video>
+    </div>
+
+    <script>
+        // ÖNEMLİ: Onrender linkini alınca buradaki adresi güncelleyeceğiz!
+        const socket = io(); 
+        const grid = document.querySelector('#guest-grid');
+        
+        for(let i=0; i<8; i++) {
+            grid.innerHTML += `<div class="slot" id="slot${i}"><span class="plus-icon">+</span><span class="req-text">Request</span></div>`;
+        }
+
+        socket.on('update_host', (data) => {
+            const el = document.getElementById(`slot${data.slot}`);
+            if(data.action === 'add') {
+                el.classList.add('slot-active');
+                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar"><span class="guest-name">${data.name}</span>`;
+            } else {
+                el.classList.remove('slot-active');
+                el.innerHTML = `<span class="plus-icon">+</span><span class="req-text">Request</span>`;
+            }
+        });
+
+        socket.on('lion_trigger', () => {
+            const v = document.getElementById('lion-vid');
+            const o = document.getElementById('lion-overlay');
+            o.style.display = 'flex';
+            v.currentTime = 0;
+            v.play();
+            v.onended = () => o.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
