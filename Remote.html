@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mode 2 - Remote Control</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body { background: #0f1115; color: #e1e1e1; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 400px; margin: auto; background: #1a1d23; border-radius: 15px; padding: 20px; border: 1px solid #2d323e; }
+        h1 { font-size: 22px; margin-bottom: 5px; }
+        p { color: #888; font-size: 12px; margin-bottom: 20px; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        button { background: #2d323e; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .lion-btn { background: #3b4252; width: 100%; border: 1px solid #4e5d7a; margin-bottom: 20px; }
+        .slot-row { display: flex; align-items: center; justify-content: space-between; background: #252a33; padding: 10px; border-radius: 10px; margin-bottom: 8px; }
+        .add-btn { background: #2ecc71; padding: 5px 12px; color: white; }
+        .empty-btn { background: #e74c3c; padding: 5px 12px; color: white; margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Remote Control</h1>
+        <p>Send commands to the host tab.</p>
+        <div class="btn-group">
+            <button>Close 8-seat room</button>
+            <button>Edit 8-room style</button>
+        </div>
+        <button class="lion-btn" onclick="socket.emit('trigger_lion')">🦁 Play Aslan Animation</button>
+        <div id="slot-list"></div>
+    </div>
+    <script>
+        const socket = io('https://tiktok-yayin.onrender.com'); 
+        const list = document.getElementById('slot-list');
+        for(let i=0; i<8; i++) {
+            list.innerHTML += `
+                <div class="slot-row">
+                    <span style="font-size:13px">Empty (Slot ${i+1})</span>
+                    <div>
+                        <button class="add-btn" onclick="add(${i})">Add</button>
+                        <button class="empty-btn" onclick="empty(${i})">Empty</button>
+                    </div>
+                </div>`;
+        }
+        function add(id) {
+            const u = prompt("İsim Girin:");
+            if(u) socket.emit('manage_slot', { action: 'add', slot: id, name: u, avatar: '3333.jpeg' });
+        }
+        function empty(id) { socket.emit('manage_slot', { action: 'empty', slot: id }); }
+    </script>
+</body>
+</html>

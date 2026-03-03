@@ -58,15 +58,15 @@
     <div id="main-view">
         <img src="3333.jpeg" alt="Host">
     </div>
-    <div id="guest-grid" id="slots-container"></div>
+    <div id="guest-grid"></div>
     
     <div id="lion-overlay">
         <video id="lion-vid" width="100%"><source src="aslan.mp4" type="video/mp4"></video>
     </div>
 
     <script>
-        // ÖNEMLİ: Onrender linkini alınca buradaki adresi güncelleyeceğiz!
-        const socket = io(); 
+        // Render adresin eklendi
+        const socket = io('https://tiktok-yayin.onrender.com'); 
         const grid = document.querySelector('#guest-grid');
         
         for(let i=0; i<8; i++) {
