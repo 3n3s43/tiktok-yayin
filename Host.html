@@ -1,70 +1,84 @@
-<style>
-    /* 8'li Koltuk Grubu - Adamın sistemindeki gibi yan yana 2'li */
-    #guest-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr; /* 2 Sütun */
-        gap: 2px; /* Kutular arasındaki o ince çizgi */
-        width: 300px; /* Toplam genişlik */
-        background: #0b0d11;
-        padding: 2px;
-    }
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>TikTok Live - Professional Mode</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
+        #canvas { width: 100vw; height: 100vh; position: relative; background: #000; }
 
-    .slot { 
-        aspect-ratio: 1 / 1; /* Kare koltuklar */
-        background: #1c2026; 
-        display: flex; flex-direction: column; 
-        align-items: center; justify-content: center;
-        border: 1px solid #0b0d11;
-    }
+        /* SÜRÜKLENEBİLİR ELEMANLAR */
+        .draggable { position: absolute !important; cursor: default; border: 2px solid transparent; }
+        /* Edit Modu Aktifken Çıkan Çizgiler */
+        .ui-draggable-dragging, .edit-active { border: 2px dashed #00f2ea !important; background: rgba(0, 242, 234, 0.1); }
 
-    /* İSTEDİĞİN YAZI AYARI: Büyük değil, küçük ve şık */
-    .req-text { 
-        font-size: 13px; 
-        color: #fff; 
-        opacity: 0.5; 
-        margin-top: 5px;
-        text-transform: capitalize; /* Sadece baş harfi büyük: Request */
-        font-weight: 400;
-    }
+        /* 8'Lİ GRUP */
+        #guest-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+            width: 300px;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+        }
 
-    .plus-icon { 
-        font-size: 30px; 
-        color: #fff; 
-        opacity: 0.5; 
-        font-weight: 100; 
-    }
+        .slot { 
+            aspect-ratio: 1/1; 
+            background: #1a1d23; 
+            border-radius: 8px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
 
-    /* Düzenleme modunda tüm grubu taşıyabilmen için */
-    .edit-active { border: 2px dashed #00f2ea !important; }
-</style>
+        /* İSTEDİĞİN KÜÇÜK YAZI: Request */
+        .req-text { font-size: 12px; opacity: 0.6; margin-top: 5px; text-transform: capitalize; }
+        .plus-icon { font-size: 24px; opacity: 0.4; }
+
+        /* ASLAN VİDEOSU - TAM ORTA */
+        #lion-box { width: 600px; height: 400px; display: none; z-index: 9999; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+
+        /* HOST KAMERA ALANI */
+        #host-cam { width: 450px; min-height: 250px; background: #111; border-radius: 15px; overflow: hidden; }
+        #host-cam img { width: 100%; pointer-events: none; }
+    </style>
+</head>
+<body>
 
 <div id="canvas">
-    <div id="host-cam" class="draggable resizable" style="top:50px; left:50px;">
-        <img src="3333.jpeg" style="width:100%; border-radius:10px;">
+    <div id="host-cam" class="draggable" style="top:50px; left:50px;">
+        <img src="3333.jpeg"> 
     </div>
 
     <div id="guest-container" class="draggable" style="top:50px; right:50px;">
         </div>
 
-    <div id="lion-box" class="draggable resizable" style="display: none;">
-        <video id="lion-vid" style="width: 100%;"><source src="aslan.mp4"></video>
+    <div id="lion-box" class="draggable">
+        <video id="lion-vid"><source src="aslan.mp4" type="video/mp4"></video>
     </div>
 </div>
 
 <script>
-    // Koltukları oluştururken "Request" yazısını küçük harf yaptık
-    const container = document.getElementById('guest-container');
+    const socket = io();
+
+    // 8 Slotu oluştur
+    const container = $('#guest-container');
     for(let i=0; i<8; i++) {
-        container.innerHTML += `
-            <div id="slot${i}" class="slot">
-                <span class="plus-icon">+</span>
-                <span class="req-text">Request</span>
-            </div>`;
+        container.append(`<div id="slot${i}" class="slot"><span class="plus-icon">+</span><span class="req-text">Request</span></div>`);
     }
 
-    // Artık tek tek slotları değil, #guest-container'ı sürüklüyoruz
+    // Draggable Başlat (Kilitli şekilde)
     $(function() {
-        $(".draggable").draggable({ disabled: true, snap: true });
-        $(".resizable").resizable({ disabled: true });
+        $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
     });
-</script>
+
+    // KUMANDADAN GELEN EMİR
+    socket.on('toggle_edit', (data) => {
+        console.log("Edit Modu:", data.status);
+        if(data.status) {
+            $(".draggable").draggable("enable").addClass("edit-active");
+            $("#
