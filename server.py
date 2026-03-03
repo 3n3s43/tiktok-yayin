@@ -7,15 +7,20 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Dosyaları internetten sunabilmek için gerekli
+# Ana sayfa (Host.html)
 @app.route('/')
-def index(): return send_from_directory('.', 'Host.html')
+def index():
+    return send_from_directory('.', 'Host.html')
 
+# Remote sayfası (Remote.html)
 @app.route('/remote')
-def remote(): return send_from_directory('.', 'Remote.html')
+def remote_page():
+    return send_from_directory('.', 'Remote.html')
 
+# Resim ve Videolar için (aslan.mp4, 3333.jpeg vb.)
 @app.route('/<path:path>')
-def static_files(path): return send_from_directory('.', path)
+def static_files(path):
+    return send_from_directory('.', path)
 
 @socketio.on('manage_slot')
 def handle_slot(data):
@@ -26,6 +31,5 @@ def handle_lion():
     emit('lion_trigger', broadcast=True)
 
 if __name__ == '__main__':
-    # Render'ın verdiği portu otomatik yakalar
     port = int(os.environ.get("PORT", 5001))
     socketio.run(app, host='0.0.0.0', port=port)
