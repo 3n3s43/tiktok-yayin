@@ -1,83 +1,70 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Inter', sans-serif; }
-        #canvas { width: 100vw; height: 100vh; position: relative; }
-        
-        /* Profesyonel Kutular */
-        .slot { 
-            width: 140px; height: 140px; background: #16191f; border: 1px solid #2d323e;
-            border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .plus-icon { font-size: 32px; color: #fff; opacity: 0.4; }
-        .req-text { font-size: 12px; color: #fff; opacity: 0.4; margin-top: 5px; text-transform: uppercase; }
-
-        /* Sürükleme Modu Efektleri */
-        .edit-active { border: 2px dashed #00f2ea !important; z-index: 1000; }
-        .draggable { position: absolute; }
-        
-        .user-avatar { width: 70%; height: auto; border-radius: 50%; border: 2px solid #00f2ea; }
-        .user-name { color: #fff; font-size: 13px; margin-top: 10px; font-weight: 600; }
-
-        #lion-box { position: fixed; z-index: 9999; display: none; pointer-events: none; }
-    </style>
-</head>
-<body>
-    <div id="canvas">
-        <div id="host-cam" class="draggable resizable" style="top:50px; left:50px;">
-            <img src="3333.jpeg" style="width:100%; border-radius:10px;">
-        </div>
-        <div id="slots-layer"></div>
-    </div>
-    <div id="lion-box"><video id="lion-vid" width="500"><source src="aslan.mp4"></video></div>
-
-<script>
-    const socket = io('https://tiktok-yayin.onrender.com');
-
-    // 8'li Koltuk Dizilimi
-    for(let i=0; i<8; i++) {
-        $('#slots-layer').append(`
-            <div id="slot${i}" class="draggable resizable slot" style="top:${100 + (i*60)}px; right:100px;">
-                <span class="plus-icon">+</span><div class="req-text">Request</div>
-            </div>
-        `);
+<style>
+    /* 8'li Koltuk Grubu - Adamın sistemindeki gibi yan yana 2'li */
+    #guest-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 2 Sütun */
+        gap: 2px; /* Kutular arasındaki o ince çizgi */
+        width: 300px; /* Toplam genişlik */
+        background: #0b0d11;
+        padding: 2px;
     }
 
-    // Gelişmiş Sürükle-Bırak (Mıknatıs Özelliği ile)
+    .slot { 
+        aspect-ratio: 1 / 1; /* Kare koltuklar */
+        background: #1c2026; 
+        display: flex; flex-direction: column; 
+        align-items: center; justify-content: center;
+        border: 1px solid #0b0d11;
+    }
+
+    /* İSTEDİĞİN YAZI AYARI: Büyük değil, küçük ve şık */
+    .req-text { 
+        font-size: 13px; 
+        color: #fff; 
+        opacity: 0.5; 
+        margin-top: 5px;
+        text-transform: capitalize; /* Sadece baş harfi büyük: Request */
+        font-weight: 400;
+    }
+
+    .plus-icon { 
+        font-size: 30px; 
+        color: #fff; 
+        opacity: 0.5; 
+        font-weight: 100; 
+    }
+
+    /* Düzenleme modunda tüm grubu taşıyabilmen için */
+    .edit-active { border: 2px dashed #00f2ea !important; }
+</style>
+
+<div id="canvas">
+    <div id="host-cam" class="draggable resizable" style="top:50px; left:50px;">
+        <img src="3333.jpeg" style="width:100%; border-radius:10px;">
+    </div>
+
+    <div id="guest-container" class="draggable" style="top:50px; right:50px;">
+        </div>
+
+    <div id="lion-box" class="draggable resizable" style="display: none;">
+        <video id="lion-vid" style="width: 100%;"><source src="aslan.mp4"></video>
+    </div>
+</div>
+
+<script>
+    // Koltukları oluştururken "Request" yazısını küçük harf yaptık
+    const container = document.getElementById('guest-container');
+    for(let i=0; i<8; i++) {
+        container.innerHTML += `
+            <div id="slot${i}" class="slot">
+                <span class="plus-icon">+</span>
+                <span class="req-text">Request</span>
+            </div>`;
+    }
+
+    // Artık tek tek slotları değil, #guest-container'ı sürüklüyoruz
     $(function() {
-        $(".draggable").draggable({ 
-            disabled: true, 
-            snap: ".draggable", // Kutular birbirine yapışır
-            snapMode: "outer" 
-        });
-        $(".resizable").resizable({ disabled: true, aspectRatio: true });
-    });
-
-    socket.on('toggle_edit', (data) => {
-        $(".draggable").draggable(data.status ? "enable" : "disable").toggleClass('edit-active', data.status);
-        $(".resizable").resizable(data.status ? "enable" : "disable");
-    });
-
-    socket.on('update_host', (data) => {
-        const el = $(`#slot${data.slot}`);
-        if(data.user) {
-            el.html(`<img src="${data.user.avatar}" class="user-avatar"><div class="user-name">${data.user.name}</div>`);
-        } else {
-            el.html(`<span class="plus-icon">+</span><div class="req-text">Request</div>`);
-        }
-    });
-
-    socket.on('lion_trigger', () => {
-        $("#lion-box").css({top: '20%', left: '25%'}).fadeIn();
-        document.getElementById('lion-vid').play();
-        document.getElementById('lion-vid').onended = () => $("#lion-box").fadeOut();
+        $(".draggable").draggable({ disabled: true, snap: true });
+        $(".resizable").resizable({ disabled: true });
     });
 </script>
-</body>
-</html>
