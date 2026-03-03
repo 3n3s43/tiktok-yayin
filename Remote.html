@@ -2,59 +2,90 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Mode 2 - Pro Remote</title>
+    <title>Mode 2 - Remote Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { background: #0f1115; color: #e1e1e1; font-family: sans-serif; padding: 20px; }
-        .container { max-width: 450px; margin: auto; background: #1a1d23; border-radius: 15px; padding: 20px; border: 1px solid #2d323e; }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-        button { background: #2d323e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: 0.3s; }
-        button.active { background: #00f2ea; color: #000; font-weight: bold; }
-        .section-title { font-size: 14px; color: #888; margin: 15px 0 10px; display: flex; justify-content: space-between; align-items: center; }
-        .slot-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .slot-card { background: #252a33; padding: 10px; border-radius: 8px; text-align: center; }
-        .add-btn { background: #2ecc71; width: 100%; margin-top: 5px; }
+        body { background: #0f1115; color: #e1e1e1; font-family: 'Inter', sans-serif; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: #15181f; border-radius: 12px; padding: 20px; border: 1px solid #252932; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; }
+        button { background: #252932; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+        button.active { background: #00f2ea; color: #000; }
+        .slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .slot-box { background: #1c2028; border: 1px solid #2d323e; border-radius: 10px; padding: 15px; text-align: center; min-height: 120px; }
+        .user-info { display: flex; flex-direction: column; align-items: center; }
+        .user-info img { width: 50px; height: 50px; border-radius: 50%; margin-bottom: 8px; border: 2px solid #00f2ea; }
+        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
+        .btn-kick { background: #351c1c; color: #ff5f5f; }
+        .btn-lion { background: #2d323e; grid-column: span 2; display: flex; align-items: center; justify-content: center; gap: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Remote Control</h2>
+        <h3>Remote Control</h3>
         <div class="btn-group">
             <button onclick="toggleEdit(this)">Edit Move: Off</button>
-            <button onclick="socket.emit('save_layout')">Save Layout</button>
-            <button onclick="socket.emit('trigger_lion')">Lion Animation</button>
+            <button>Save Layout</button>
+            <button onclick="socket.emit('trigger_lion')">General Lion</button>
         </div>
-
-        <div class="section-title">8-seat room <span>Open</span></div>
-        <div id="slot-list" class="slot-row"></div>
+        <div class="slot-grid" id="slot-container"></div>
     </div>
 
     <script>
-        const socket = io('https://tiktok-yayin.onrender.com');
+        const socket = io();
         let editMode = false;
+        let slots = Array(8).fill(null);
 
         function toggleEdit(btn) {
             editMode = !editMode;
-            btn.innerText = editMode ? "Edit Move: On" : "Edit Move: Off";
+            btn.innerText = `Edit Move: ${editMode ? 'On' : 'Off'}`;
             btn.classList.toggle('active');
             socket.emit('toggle_edit', { status: editMode });
         }
 
-        const list = document.getElementById('slot-list');
-        for(let i=0; i<8; i++) {
-            list.innerHTML += `
-                <div class="slot-card">
-                    <div style="font-size:11px; color:#666">Empty</div>
-                    <button class="add-btn" onclick="add(${i})">Add</button>
-                    <button style="background:#e74c3c; width:100%; margin-top:2px" onclick="empty(${i})">X</button>
-                </div>`;
+        function renderSlots() {
+            const container = document.getElementById('slot-container');
+            container.innerHTML = '';
+            slots.forEach((user, i) => {
+                container.innerHTML += `
+                    <div class="slot-box">
+                        ${user ? `
+                            <div class="user-info">
+                                <img src="${user.avatar}">
+                                <span>${user.name}</span>
+                                <div class="action-btns">
+                                    <button class="btn-kick" onclick="updateSlot(${i}, null)">Kick</button>
+                                    <button style="background:#252932">Donate</button>
+                                    <button class="btn-lion" onclick="sendLion(${i})">🦁 Lion Gift</button>
+                                </div>
+                            </div>
+                        ` : `
+                            <div style="color:#444; margin-bottom:10px">Empty</div>
+                            <button onclick="addUser(${i})" style="background:#00f2ea; color:#000; width:100%">Add</button>
+                        `}
+                    </div>`;
+            });
         }
 
-        function add(id) {
-            const u = prompt("İsim:");
-            if(u) socket.emit('manage_slot', { action: 'add', slot: id, name: u, avatar: '3333.jpeg' });
+        async function addUser(id) {
+            const handle = prompt("Enter TikTok handle:");
+            if(!handle) return;
+            const res = await fetch(`/get_tiktok/${handle}`);
+            const data = await res.json();
+            slots[id] = data;
+            updateSlot(id, data);
         }
-        function empty(id) { socket.emit('manage_slot', { action: 'empty', slot: id }); }
+
+        function updateSlot(id, data) {
+            slots[id] = data;
+            socket.emit('manage_slot', { slot: id, user: data });
+            renderSlots();
+        }
+
+        function sendLion(id) {
+            socket.emit('trigger_lion', { target: id });
+        }
+
+        renderSlots();
     </script>
 </body>
 </html>
