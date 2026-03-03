@@ -2,47 +2,56 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Mode 2 - Remote Control</title>
+    <title>Mode 2 - Pro Remote</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         body { background: #0f1115; color: #e1e1e1; font-family: sans-serif; padding: 20px; }
-        .container { max-width: 400px; margin: auto; background: #1a1d23; border-radius: 15px; padding: 20px; border: 1px solid #2d323e; }
-        h1 { font-size: 22px; margin-bottom: 5px; }
-        p { color: #888; font-size: 12px; margin-bottom: 20px; }
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        button { background: #2d323e; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; }
-        .lion-btn { background: #3b4252; width: 100%; border: 1px solid #4e5d7a; margin-bottom: 20px; }
-        .slot-row { display: flex; align-items: center; justify-content: space-between; background: #252a33; padding: 10px; border-radius: 10px; margin-bottom: 8px; }
-        .add-btn { background: #2ecc71; padding: 5px 12px; color: white; }
-        .empty-btn { background: #e74c3c; padding: 5px 12px; color: white; margin-left: 5px; }
+        .container { max-width: 450px; margin: auto; background: #1a1d23; border-radius: 15px; padding: 20px; border: 1px solid #2d323e; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        button { background: #2d323e; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: 0.3s; }
+        button.active { background: #00f2ea; color: #000; font-weight: bold; }
+        .section-title { font-size: 14px; color: #888; margin: 15px 0 10px; display: flex; justify-content: space-between; align-items: center; }
+        .slot-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .slot-card { background: #252a33; padding: 10px; border-radius: 8px; text-align: center; }
+        .add-btn { background: #2ecc71; width: 100%; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Remote Control</h1>
-        <p>Send commands to the host tab.</p>
+        <h2>Remote Control</h2>
         <div class="btn-group">
-            <button>Close 8-seat room</button>
-            <button>Edit 8-room style</button>
+            <button onclick="toggleEdit(this)">Edit Move: Off</button>
+            <button onclick="socket.emit('save_layout')">Save Layout</button>
+            <button onclick="socket.emit('trigger_lion')">Lion Animation</button>
         </div>
-        <button class="lion-btn" onclick="socket.emit('trigger_lion')">🦁 Play Aslan Animation</button>
-        <div id="slot-list"></div>
+
+        <div class="section-title">8-seat room <span>Open</span></div>
+        <div id="slot-list" class="slot-row"></div>
     </div>
+
     <script>
-        const socket = io('https://tiktok-yayin.onrender.com'); 
+        const socket = io('https://tiktok-yayin.onrender.com');
+        let editMode = false;
+
+        function toggleEdit(btn) {
+            editMode = !editMode;
+            btn.innerText = editMode ? "Edit Move: On" : "Edit Move: Off";
+            btn.classList.toggle('active');
+            socket.emit('toggle_edit', { status: editMode });
+        }
+
         const list = document.getElementById('slot-list');
         for(let i=0; i<8; i++) {
             list.innerHTML += `
-                <div class="slot-row">
-                    <span style="font-size:13px">Empty (Slot ${i+1})</span>
-                    <div>
-                        <button class="add-btn" onclick="add(${i})">Add</button>
-                        <button class="empty-btn" onclick="empty(${i})">Empty</button>
-                    </div>
+                <div class="slot-card">
+                    <div style="font-size:11px; color:#666">Empty</div>
+                    <button class="add-btn" onclick="add(${i})">Add</button>
+                    <button style="background:#e74c3c; width:100%; margin-top:2px" onclick="empty(${i})">X</button>
                 </div>`;
         }
+
         function add(id) {
-            const u = prompt("İsim Girin:");
+            const u = prompt("İsim:");
             if(u) socket.emit('manage_slot', { action: 'add', slot: id, name: u, avatar: '3333.jpeg' });
         }
         function empty(id) { socket.emit('manage_slot', { action: 'empty', slot: id }); }
