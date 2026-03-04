@@ -2,10 +2,10 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Orender Pro - TikTok Elegant</title>
+    <title>Orender Pro - TikTok Reji</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; width: 100vw; height: 100vh; }
@@ -24,7 +24,7 @@
         .host-controls { z-index: 100; display: none; flex-direction: column; gap: 10px; }
         .host-btn { background: #00f2ea; color: #000; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; }
 
-        /* 8'Lİ REQUEST (ZARİFLEŞTİRİLMİŞ YAZILAR) */
+        /* 8'Lİ REQUEST */
         #guest-grid { 
             width: 170px; height: 440px; 
             position: absolute; top: 40px; left: 245px; 
@@ -38,33 +38,19 @@
             border: none; 
             display: flex; flex-direction: column; 
             align-items: center; justify-content: center; 
+            overflow: hidden;
         }
 
-        /* ✅ ARTI İŞARETİ: KALINLIĞI DÜŞÜRÜLDÜ */
-        .plus-icon { 
-            color: #ffffff; 
-            font-size: 24px; 
-            font-weight: 400; /* Daha ince */
-            opacity: 0.7; /* Birkaç tık şeffaflık */
-            margin-bottom: 2px;
-        }
+        .plus-icon { color: #ffffff; font-size: 24px; font-weight: 400; opacity: 0.7; margin-bottom: 2px; }
+        .req-text { color: #ffffff; font-size: 11px; font-weight: 400; opacity: 0.6; letter-spacing: 0.5px; }
 
-        /* ✅ REQUEST YAZISI: ZARİF BEYAZ */
-        .req-text { 
-            color: #ffffff; 
-            font-size: 11px; 
-            font-weight: 400; /* Kalınlık düşürüldü */
-            opacity: 0.6; /* Birkaç tık şeffaflık */
-            letter-spacing: 0.5px;
-        }
-
-        /* ASLAN */
+        /* ASLAN KATMANI */
         #lion-overlay { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 550px; display: none; z-index: 9999; pointer-events: none; }
         #lion-vid { width: 100%; height: auto; }
 
         .edit-active { border: 2px dashed #00f2ea !important; z-index: 1000; }
         .edit-active .host-controls { display: flex; }
-        .guest-avatar { width: 80%; border-radius: 50%; border: 1.5px solid #fff; }
+        .guest-avatar { width: 80%; height: 80%; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -91,17 +77,18 @@
         <div class="slot" id="slot7"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
     </div>
 
-    <div id="lion-overlay" class="draggable resizable"><video id="lion-vid"><source src="aslan.mp4" type="video/mp4"></video></div>
+    <div id="lion-overlay"><video id="lion-vid" muted><source src="aslan.mp4" type="video/mp4"></video></div>
 </div>
 
 <script>
-    const socket = io();
+    const socket = io(); // Sunucuya bağlan
 
     $(function() {
         $(".draggable").draggable({ containment: "parent" }).draggable("disable");
         $(".resizable").resizable({ aspectRatio: false, handles: "all" }).resizable("disable");
     });
 
+    // Kamera fonksiyonu
     async function startCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         const v = document.getElementById('webcam');
@@ -109,14 +96,18 @@
         document.getElementById('host-img').style.display = 'none';
     }
 
+    // Resim yükleme fonksiyonu
     function loadImg(event) {
         const file = event.target.files[0];
         if (file) {
             const img = document.getElementById('host-img');
             img.src = URL.createObjectURL(file);
-            img.style.display = 'block'; document.getElementById('webcam').style.display = 'none';
+            img.style.display = 'block'; 
+            document.getElementById('webcam').style.display = 'none';
         }
     }
+
+    // --- Kumanda Dinleyicileri ---
 
     socket.on('toggle_edit', (data) => {
         const state = data.status ? "enable" : "disable";
@@ -125,20 +116,30 @@
     });
 
     socket.on('execute_visual', (data) => {
+        console.log("Komut geldi:", data); // Hata ayıklama için
+
+        // 1. ASLAN PATLATMA
         if (data.action === 'lion_trigger') {
-            $("#lion-overlay").fadeIn(200);
+            const overlay = document.getElementById('lion-overlay');
             const v = document.getElementById('lion-vid');
-            v.currentTime = 0; v.play();
-            v.onended = () => { if(!$(".draggable").hasClass('edit-active')) $("#lion-overlay").fadeOut(300); };
+            $(overlay).fadeIn(200);
+            v.muted = false; // Sesi aç
+            v.currentTime = 0;
+            v.play().catch(e => console.log("Oynatma hatası:", e));
+            v.onended = () => { $(overlay).fadeOut(300); };
         }
+
+        // 2. TIKTOK HESABI OTURTMA (KOLTUĞA OTURTMA)
         if (data.action === 'manage_slot') {
             const el = document.getElementById("slot" + data.slot);
-            if (el && data.name) {
-                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar">`;
-                el.style.background = "#0a0a0a";
-            } else if (el) {
-                el.innerHTML = `<div class="plus-icon">+</div><div class="req-text">Request</div>`;
-                el.style.background = "rgba(255, 255, 255, 0.05)";
+            if (el) {
+                if (data.name) {
+                    el.innerHTML = `<img src="${data.avatar}" class="guest-avatar">`;
+                    el.style.background = "#0a0a0a";
+                } else {
+                    el.innerHTML = `<div class="plus-icon">+</div><div class="req-text">Request</div>`;
+                    el.style.background = "rgba(255, 255, 255, 0.05)";
+                }
             }
         }
     });
