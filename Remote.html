@@ -24,12 +24,10 @@
 <body>
     <div class="top-nav">
         <button id="editBtn" class="nav-btn" onclick="toggleEdit()">Edit Move: Off</button>
-        <button class="nav-btn" onclick="window.open('/', '_blank')">Open Host</button>
     </div>
     <div class="slot-grid" id="slotContainer"></div>
-
 <script>
-    const socket = io({ transports: ['websocket'] });
+    const socket = io();
     let isEdit = false;
     const slots = Array(8).fill(null);
 
