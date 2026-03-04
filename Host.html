@@ -2,33 +2,30 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Orender Pro - Multi-Slot Counters</title>
+    <title>Orender Pro - Host</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; width: 100vw; height: 100vh; color: white; }
-        #canvas { width: 100%; height: 100%; position: relative; }
-        #host-cam { width: 230px; height: 440px; position: absolute; top: 40px; left: 15px; border: 1px solid #3498db; border-radius: 2px; overflow: hidden; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
+        #canvas { width: 100vw; height: 100vh; position: relative; }
+        #host-cam { width: 230px; height: 440px; position: absolute; top: 40px; left: 15px; border: 1px solid #3498db; border-radius: 2px; overflow: hidden; background: #111; }
         #host-cam img, #host-cam video { width: 100%; height: 100%; object-fit: cover; }
         #guest-grid { width: 170px; height: 440px; position: absolute; top: 40px; left: 245px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 2px; }
-        .slot { background: rgba(255, 255, 255, 0.05); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .slot-score { position: absolute; top: 2px; left: 5px; font-size: 10px; font-weight: bold; display: flex; align-items: center; gap: 2px; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 1px 5px; color: #00f2ea; }
-        .score-icon { color: #00f2ea; font-size: 8px; }
-        .plus-icon { color: #ffffff; font-size: 20px; opacity: 0.5; }
-        .req-text { color: #ffffff; font-size: 10px; opacity: 0.4; }
-        .guest-avatar { width: 70%; height: 70%; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; margin-top: 10px; }
+        .slot { background: rgba(255, 255, 255, 0.05); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .plus-icon { color: #ffffff; font-size: 20px; font-weight: 300; opacity: 0.6; }
+        .req-text { color: #ffffff; font-size: 10px; font-weight: 400; opacity: 0.5; margin-top: -2px; }
+        .slot-score { position: absolute; top: 2px; left: 5px; font-size: 10px; font-weight: bold; display: flex; align-items: center; gap: 2px; background: rgba(0,0,0,0.5); border-radius: 10px; padding: 1px 6px; color: #00f2ea; z-index: 5; }
+        .guest-avatar { width: 70%; height: 70%; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; margin-top: 8px; }
         .guest-name { font-size: 9px; margin-top: 2px; opacity: 0.8; }
         #lion-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 9999; pointer-events: none; }
         #lion-vid { width: 100%; height: 100%; object-fit: contain; }
+        .edit-active { border: 2px dashed #00f2ea !important; z-index: 1000; }
     </style>
 </head>
 <body>
 <div id="canvas">
-    <div id="host-cam" class="draggable resizable">
-        <img id="host-img" src="3333.jpeg">
-        <video id="webcam" autoplay playsinline style="display:none;"></video>
-    </div>
+    <div id="host-cam" class="draggable resizable"><img id="host-img" src="3333.jpeg"></div>
     <div id="guest-grid" class="draggable resizable"></div>
     <div id="lion-overlay"><video id="lion-vid" muted><source src="aslan.mp4" type="video/mp4"></video></div>
 </div>
@@ -36,45 +33,39 @@
 <script>
     const socket = io({ transports: ['websocket'] });
     const slotScores = Array(8).fill(0);
-
     const grid = document.getElementById('guest-grid');
-    for(let i=0; i<8; i++) {
-        grid.innerHTML += `<div class="slot" id="slot${i}"><div class="plus-icon">+</div><div class="req-text">Request</div></div>`;
-    }
+    const emptyHtml = `<div class="plus-icon">+</div><div class="req-text">Request</div>`;
+
+    for(let i=0; i<8; i++) { grid.innerHTML += `<div class="slot" id="slot${i}">${emptyHtml}</div>`; }
+
+    $(function() {
+        $(".draggable").draggable().draggable("disable");
+        $(".resizable").resizable().resizable("disable");
+    });
 
     socket.on('execute_visual', (data) => {
-        // ASLAN VE PUAN TETİKLEME
         if (data.action === 'lion_trigger') {
-            const slotIdx = data.slot;
             const v = document.getElementById('lion-vid');
-            $("#lion-overlay").fadeIn(200);
-            v.currentTime = 0;
-            v.muted = false; // Sesi aç
-            v.play().catch(e => console.log("Oynatma hatası:", e));
-            
-            slotScores[slotIdx] += 29999;
-            const scoreDisplay = (slotScores[slotIdx] / 1000).toFixed(1) + "K";
-            $(`#slot${slotIdx} .slot-score span:last-child`).text(scoreDisplay);
-
-            v.onended = () => $("#lion-overlay").fadeOut(300);
+            $("#lion-overlay").show();
+            v.currentTime = 0; v.muted = false; v.play();
+            slotScores[data.slot] += 29999;
+            $(`#slot${data.slot} .slot-score span`).text((slotScores[data.slot]/1000).toFixed(1) + "K");
+            v.onended = () => $("#lion-overlay").hide();
         }
-
-        // KULLANICI OTURTMA
         if (data.action === 'manage_slot') {
             const el = document.getElementById("slot" + data.slot);
             if (data.name) {
-                el.innerHTML = `
-                    <div class="slot-score"><span class="score-icon">●</span> <span>0.0K</span></div>
-                    <img src="${data.avatar}" class="guest-avatar">
-                    <div class="guest-name">${data.name}</div>`;
+                el.innerHTML = `<div class="slot-score">● <span>0.0K</span></div><img src="${data.avatar}" class="guest-avatar"><div class="guest-name">${data.name}</div>`;
                 slotScores[data.slot] = 0;
-            } else {
-                el.innerHTML = `<div class="plus-icon">+</div><div class="req-text">Request</div>`;
-                slotScores[data.slot] = 0;
-            }
+            } else { el.innerHTML = emptyHtml; }
         }
     });
 
+    socket.on('toggle_edit', (data) => {
+        const s = data.status ? "enable" : "disable";
+        $(".draggable").draggable(s).toggleClass("edit-active", data.status);
+        $(".resizable").resizable(s);
+    });
     $(document).on('click', () => { document.getElementById('lion-vid').muted = false; });
 </script>
 </body>

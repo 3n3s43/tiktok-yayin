@@ -3,83 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orender Remote - Professional</title>
+    <title>Orender Remote</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        :root { --bg: #0d0f14; --card: #16181d; --btn-gray: #24272e; --accent: #3498db; --donate: #bd4a00; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
-        .header-title { font-size: 18px; font-weight: bold; margin-bottom: 2px; }
-        .sub-text { color: #666; font-size: 11px; margin-bottom: 15px; }
-        .top-nav { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 15px; }
-        .nav-btn { background: var(--btn-gray); border: none; color: #fff; padding: 10px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500; }
-        .setting-item { border-bottom: 1px solid #1f2229; display: flex; justify-content: space-between; padding: 12px 0; font-size: 14px; cursor: pointer; }
+        :root { --bg: #0d0f14; --card: #16181d; --accent: #3498db; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 10px; margin: 0; }
+        .top-nav { display: flex; gap: 5px; margin-bottom: 20px; }
+        .nav-btn { background: #24272e; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 11px; }
+        .active-edit { background: #fff !important; color: #000 !important; }
         .slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .slot-box { background: var(--card); border-radius: 10px; padding: 8px; min-height: 65px; border: 1px solid #222; display: flex; flex-direction: column; justify-content: center; }
-        .btn-add-large { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #333; width: 100%; padding: 12px; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
-        .user-card { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--accent); }
-        .username { font-size: 12px; font-weight: bold; }
+        .slot-box { background: var(--card); border: 1px solid #333; border-radius: 10px; padding: 10px; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+        .btn-add { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #444; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .user-info { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--accent); }
         .action-row { display: flex; gap: 5px; }
-        .btn-kick { background: var(--btn-gray); color: #fff; flex: 1; padding: 10px; border-radius: 6px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .btn-donate { background: var(--donate); color: #fff; flex: 1.5; padding: 10px; border-radius: 6px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .gift-box { background: rgba(52, 152, 219, 0.15); padding: 8px; border-radius: 6px; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; cursor: pointer; border: 1px solid rgba(52, 152, 219, 0.4); font-weight: bold; }
+        .btn-small { flex: 1; padding: 8px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-lion { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; margin-top: 8px; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="header-title">Remote Control</div>
-    <div class="sub-text">Send commands to the host tab.</div>
     <div class="top-nav">
-        <button class="nav-btn">Close 8-seat room</button>
-        <button class="nav-btn" onclick="toggleMove()">Edit Move</button>
-        <button class="nav-btn" onclick="window.open('/host.html', '_blank')">Open host tab</button>
+        <button id="editBtn" class="nav-btn" onclick="toggleEdit()">Edit Move: Off</button>
+        <button class="nav-btn" onclick="window.open('/', '_blank')">Open Host</button>
     </div>
     <div class="slot-grid" id="slotContainer"></div>
 
 <script>
     const socket = io({ transports: ['websocket'] });
+    let isEdit = false;
     const slots = Array(8).fill(null);
 
-    function renderSlots() {
+    function toggleEdit() {
+        isEdit = !isEdit;
+        const btn = document.getElementById('editBtn');
+        btn.innerText = `Edit Move: ${isEdit ? 'On' : 'Off'}`;
+        btn.classList.toggle('active-edit', isEdit);
+        socket.emit('toggle_edit', { status: isEdit });
+    }
+
+    function render() {
         const container = document.getElementById('slotContainer');
         container.innerHTML = '';
-        slots.forEach((user, i) => {
-            if (!user) {
-                container.innerHTML += `<div class="slot-box"><button class="btn-add-large" onclick="addUser(${i})">Add</button></div>`;
+        slots.forEach((u, i) => {
+            if (!u) {
+                container.innerHTML += `<div class="slot-box"><button class="btn-add" onclick="add(${i})">ADD</button></div>`;
             } else {
                 container.innerHTML += `
                     <div class="slot-box" style="border-color: var(--accent);">
-                        <div class="user-card"><img src="${user.avatar}" class="avatar"><div class="username">${user.name}</div></div>
+                        <div class="user-info"><img src="${u.avatar}" class="avatar"><div style="font-size:12px;">${u.name}</div></div>
                         <div class="action-row">
-                            <button class="btn-kick" onclick="removeUser(${i})">Kick</button>
-                            <button class="btn-donate">Donate</button>
+                            <button class="btn-small" style="background:#333; color:#fff;" onclick="remove(${i})">Kick</button>
+                            <button class="btn-small" style="background:#bd4a00; color:#fff;">Donate</button>
                         </div>
-                        <div class="gift-box" onclick="triggerLion(${i})">🦁 Lion Gift</div>
+                        <div class="btn-lion" onclick="lion(${i})">🦁 Lion Gift</div>
                     </div>`;
             }
         });
     }
 
-    function triggerLion(slotId) {
-        socket.emit('execute_visual', { action: 'lion_trigger', slot: slotId });
-    }
-
-    function addUser(id) {
-        const name = prompt("Kullanıcı Adı:");
-        if (name) {
-            const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
-            slots[id] = { name, avatar };
-            socket.emit('execute_visual', { action: 'manage_slot', slot: id, name, avatar });
-            renderSlots();
+    function add(i) {
+        const n = prompt("İsim:");
+        if(n) {
+            const a = `https://api.dicebear.com/7.x/avataaars/svg?seed=${n}`;
+            slots[i] = { name: n, avatar: a };
+            socket.emit('execute_visual', { action: 'manage_slot', slot: i, name: n, avatar: a });
+            render();
         }
     }
 
-    function removeUser(id) {
-        slots[id] = null;
-        socket.emit('execute_visual', { action: 'manage_slot', slot: id, name: null });
-        renderSlots();
+    function remove(i) {
+        slots[i] = null;
+        socket.emit('execute_visual', { action: 'manage_slot', slot: i, name: null });
+        render();
     }
 
-    renderSlots();
+    function lion(i) { socket.emit('execute_visual', { action: 'lion_trigger', slot: i }); }
+    render();
 </script>
 </body>
 </html>
