@@ -1,111 +1,68 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-    <style>
-        /* GENEL EKRAN AYARI */
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-        #canvas { width: 100vw; height: 100vh; position: relative; }
+<style>
+    /* BÜYÜTME/KÜÇÜLTME İÇİN GEREKLİ AYARLAR */
+    .resizable { 
+        position: absolute; 
+        overflow: hidden; 
+    }
+    
+    /* Filippo düzenindeki mavi çerçeve */
+    #host-cam { 
+        width: 400px; 
+        height: 600px; 
+        border: 4px solid #3498db; 
+        background: #000; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-        /* HOST KAMERASI (jjj.png'deki gibi mavi çerçeveli) */
-        #host-cam { 
-            width: 480px; height: 850px; 
-            border: 3px solid #3498db; /* Filippo'daki o mavi hat */
-            position: absolute; top: 20px; left: 20px;
-            overflow: hidden; background: #111;
-        }
-        #host-cam img { width: 100%; height: 100%; object-fit: cover; }
+    /* Kamera kutusunun içindeki resim/video ayarı */
+    #host-cam img, #host-cam video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+    }
 
-        /* SAĞDAKİ 8'Lİ REQUEST BLOĞU */
-        #guest-container {
-            position: absolute; top: 20px; right: 20px;
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 10px; width: 360px;
-        }
+    /* Düzenleme modunda çıkan o meşhur kesikli çizgiler */
+    .edit-active { 
+        border: 2px dashed #00f2ea !important; 
+        z-index: 999;
+    }
 
-        .slot { 
-            aspect-ratio: 1/1; background: rgba(25, 25, 25, 0.8); 
-            border-radius: 4px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; position: relative;
-        }
-
-        /* YAZI STİLİ: Request */
-        .req-text { font-size: 14px; color: #888; margin-top: 8px; font-weight: 500; }
-        .plus-icon { font-size: 30px; color: #555; }
-
-        /* ASLAN VİDEOSU - SADECE HEDİYE GELİNCE */
-        #lion-box { 
-            position: fixed; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); 
-            width: 800px; z-index: 9999; display: none; 
-        }
-        video { width: 100%; }
-
-        /* EDİT MODU ÇİZGİSİ */
-        .edit-active { border: 2px dashed #00f2ea !important; }
-    </style>
-</head>
-<body>
+    /* Resizable tutamaçlarını görünür yapalım */
+    .ui-resizable-handle { background: #00f2ea; width: 10px; height: 10px; }
+</style>
 
 <div id="canvas">
-    <div id="host-cam" class="draggable">
-        <img src="3333.jpeg"> </div>
+    <div id="host-cam" class="draggable resizable">
+        <img src="3333.jpeg" id="host-placeholder">
+    </div>
 
     <div id="guest-container" class="draggable">
         </div>
-
-    <div id="lion-box">
-        <video id="lion-vid"><source src="aslan.mp4" type="video/mp4"></video>
-    </div>
 </div>
 
 <script>
-    const socket = io();
-
-    // 8 Slotu Filippo'nun düzeninde oluştur
-    const container = document.getElementById('guest-container');
-    for(let i=0; i<8; i++) {
-        container.innerHTML += `
-            <div id="slot${i}" class="slot">
-                <div class="plus-icon">+</div>
-                <div class="req-text">Request</div>
-            </div>`;
-    }
-
     $(function() {
-        $(".draggable").draggable().draggable("disable");
+        // Hem sürükleme hem boyutlandırmayı başlat ama başlangıçta kapat
+        $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
+        
+        // ASPACT RATIO: True yaparak görüntünün bozulmadan büyümesini sağlıyoruz
+        $(".resizable").resizable({ 
+            aspectRatio: true, 
+            handles: "all",
+            containment: "#canvas" 
+        }).resizable("disable");
     });
 
     socket.on('toggle_edit', (data) => {
         if(data.status) {
             $(".draggable").draggable("enable").addClass("edit-active");
+            $(".resizable").resizable("enable"); // BÜYÜTME AKTİF
         } else {
             $(".draggable").draggable("disable").removeClass("edit-active");
-        }
-    });
-
-    socket.on('lion_trigger', () => {
-        $("#lion-box").fadeIn();
-        const v = document.getElementById('lion-vid');
-        v.play();
-        v.onended = () => { $("#lion-box").fadeOut(); };
-    });
-
-    socket.on('update_host', (data) => {
-        const el = $(`#slot${data.slot}`);
-        if(data.user) {
-            el.html(`
-                <img src="${data.user.avatar}" style="width:70%; border-radius:50%; border:2px solid #00f2ea;">
-                <div style="color:white; font-size:12px; margin-top:5px;">${data.user.name}</div>
-            `);
-        } else {
-            el.html(`<div class="plus-icon">+</div><div class="req-text">Request</div>`);
+            $(".resizable").resizable("disable"); // BÜYÜTME KAPALI
         }
     });
 </script>
-</body>
-</html>
