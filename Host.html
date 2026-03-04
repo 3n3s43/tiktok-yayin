@@ -1,29 +1,112 @@
-<style>
-    /* ✅ OBS İÇİN SABİTLENMİŞ KONUMLAR */
-    
-    #host-cam { 
-        width: 400px; height: 720px; 
-        border: 3px solid #3498db; 
-        position: absolute; 
-        /* OBS'de görünecek sabit yer (Sol) */
-        top: 50px; left: 30px; 
-        background: #111; overflow: hidden;
-    }
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Orender Pro - Final Stable</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <style>
+        /* TEMEL EKRAN AYARI */
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; width: 100vw; height: 100vh; }
+        #canvas { width: 100%; height: 100%; position: relative; }
 
-    #guest-grid { 
-        position: absolute; 
-        /* OBS'de görünecek sabit yer (Sağ) */
-        top: 50px; right: 30px; 
-        display: grid; 
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 5px; 
-        width: 240px; /* Kutuları senin için biraz daha küçülttüm */
-    }
+        /* HOST KAMERASI - OBS UYUMLU SABİT YER */
+        #host-cam { 
+            width: 380px; height: 680px; 
+            border: 3px solid #3498db; 
+            position: absolute; top: 40px; left: 40px;
+            background: #111; overflow: hidden; border-radius: 8px;
+        }
+        #host-cam img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
-    .slot {
-        aspect-ratio: 1/1; 
-        background: rgba(20, 20, 20, 0.95); 
-        border: 1px solid rgba(255, 255, 255, 0.1); 
-        border-radius: 6px; 
-    }
-</style>
+        /* 8'Lİ KÜÇÜK HD IZGARA - OBS UYUMLU SABİT YER */
+        #guest-grid { 
+            position: absolute; top: 40px; right: 40px;
+            display: grid; grid-template-columns: repeat(2, 1fr); 
+            gap: 6px; width: 240px; 
+        }
+
+        .slot {
+            aspect-ratio: 1/1; background: rgba(20, 20, 20, 0.95); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 6px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
+        }
+
+        .plus-icon { color: #fff; font-size: 24px; opacity: 0.4; }
+        .request-text { color: #fff; font-size: 10px; margin-top: 4px; opacity: 0.5; }
+
+        /* ASLAN KATMANI */
+        #lion-overlay { position: absolute; top: 20%; left: 25%; width: 500px; display: none; z-index: 10000; }
+        #lion-vid { width: 100%; height: auto; }
+
+        /* EDİT MODU ÇİZGİLERİ */
+        .edit-active { border: 2px dashed #00f2ea !important; z-index: 999; }
+        .ui-resizable-handle { background: #00f2ea; width: 12px; height: 12px; border-radius: 50%; }
+        
+        /* PROFİL VE PUAN */
+        .guest-avatar { width: 60%; border-radius: 50%; border: 2px solid #00f2ea; }
+    </style>
+</head>
+<body>
+
+<div id="canvas">
+    <div id="host-cam" class="draggable resizable"><img src="3333.jpeg"></div>
+
+    <div id="guest-grid" class="draggable resizable">
+        <div class="slot" id="slot0"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot1"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot2"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot3"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot4"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot5"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot6"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot7"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+    </div>
+
+    <div id="lion-overlay" class="draggable resizable">
+        <video id="lion-vid"><source src="aslan.mp4" type="video/mp4"></video>
+    </div>
+</div>
+
+<script>
+    const socket = io(); // Render üzerinden bağlantı
+
+    $(function() {
+        $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
+        $(".resizable").resizable({ aspectRatio: true, handles: "all" }).resizable("disable");
+    });
+
+    socket.on('toggle_edit', (data) => {
+        if(data.status) {
+            $(".draggable").draggable("enable").addClass("edit-active");
+            $(".resizable").resizable("enable");
+        } else {
+            $(".draggable").draggable("disable").removeClass("edit-active");
+            $(".resizable").resizable("disable");
+        }
+    });
+
+    socket.on('execute_visual', (data) => {
+        if (data.action === 'lion_effect' || data.action === 'lion_trigger') {
+            $("#lion-overlay").fadeIn();
+            const v = document.getElementById('lion-vid');
+            v.play();
+            v.onended = () => { if(!$(".draggable").hasClass('edit-active')) $("#lion-overlay").fadeOut(); };
+        }
+        
+        const slotId = "slot" + data.slot;
+        const el = document.getElementById(slotId);
+        if (data.action === 'manage_slot' && el) {
+            if (data.name) {
+                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar"><div style="color:white; font-size:10px; margin-top:4px;">${data.name}</div>`;
+            } else {
+                el.innerHTML = `<span class="plus-icon">+</span><span class="request-text">Request</span>`;
+            }
+        }
+    });
+</script>
+</body>
+</html>
