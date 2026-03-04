@@ -1,68 +1,124 @@
-<style>
-    /* BÜYÜTME/KÜÇÜLTME İÇİN GEREKLİ AYARLAR */
-    .resizable { 
-        position: absolute; 
-        overflow: hidden; 
-    }
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Orender Pro - Filippo Style</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     
-    /* Filippo düzenindeki mavi çerçeve */
-    #host-cam { 
-        width: 400px; 
-        height: 600px; 
-        border: 4px solid #3498db; 
-        background: #000; 
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; height: 100vh; width: 100vw; }
+        
+        /* ANA KANVAS */
+        #canvas { width: 100vw; height: 100vh; position: relative; }
 
-    /* Kamera kutusunun içindeki resim/video ayarı */
-    #host-cam img, #host-cam video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        pointer-events: none;
-    }
+        /* ✅ FİLİPPO MAVİ ÇERÇEVELİ HOST ALANI */
+        #main-area { 
+            width: 480px; height: 800px; 
+            border: 3px solid #3498db; 
+            border-radius: 4px;
+            position: absolute; top: 20px; left: 20px;
+            background: #111; overflow: hidden;
+        }
+        #main-area img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* Düzenleme modunda çıkan o meşhur kesikli çizgiler */
-    .edit-active { 
-        border: 2px dashed #00f2ea !important; 
-        z-index: 999;
-    }
+        /* ✅ SAĞDAKİ 8'Lİ NİZAMİ REQUEST BLOĞU */
+        #guest-grid { 
+            position: absolute; top: 20px; right: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; 
+            width: 340px; 
+        }
 
-    /* Resizable tutamaçlarını görünür yapalım */
-    .ui-resizable-handle { background: #00f2ea; width: 10px; height: 10px; }
-</style>
+        .slot {
+            background: rgba(17, 17, 17, 0.9); border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 8px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
+            aspect-ratio: 1/1;
+        }
+
+        /* YAZI STİLLERİ */
+        .plus-icon { color: #fff; font-size: 28px; font-weight: 100; opacity: 0.5; }
+        .request-text { color: #fff; font-size: 11px; margin-top: 4px; opacity: 0.6; text-transform: capitalize; }
+        
+        /* EDİT MODU GÖRÜNÜMÜ */
+        .edit-active { border: 2px dashed #00f2ea !important; z-index: 999; }
+        .ui-resizable-handle { background: #00f2ea; width: 12px; height: 12px; border-radius: 50%; }
+
+        /* ASLAN ÜST KATMAN */
+        #lion-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; z-index: 10000; pointer-events: none; }
+        #lion-vid { width: 800px; }
+
+        /* PROFİL VE PUAN */
+        .guest-avatar { width: 65px; height: 65px; border-radius: 50%; border: 2px solid #00f2ea; object-fit: cover; }
+        .score-badge { position: absolute; top: 8px; left: 8px; display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 10px; }
+        .points-display { color: #fff; font-size: 12px; }
+    </style>
+</head>
+<body>
 
 <div id="canvas">
-    <div id="host-cam" class="draggable resizable">
-        <img src="3333.jpeg" id="host-placeholder">
+    <div id="main-area" class="draggable resizable">
+        <img src="3333.jpeg">
     </div>
 
-    <div id="guest-container" class="draggable">
-        </div>
+    <div id="guest-grid" class="draggable">
+        <div class="slot" id="slot0"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot1"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot2"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot3"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot4"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot5"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot6"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot7"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+    </div>
 </div>
 
+<div id="lion-overlay"><video id="lion-vid"><source src="aslan.mp4" type="video/mp4"></video></div>
+
 <script>
+    const socket = io(); // Render bağlantısı için
+    
     $(function() {
-        // Hem sürükleme hem boyutlandırmayı başlat ama başlangıçta kapat
+        // BAŞLANGIÇTA KİLİTLİ
         $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
-        
-        // ASPACT RATIO: True yaparak görüntünün bozulmadan büyümesini sağlıyoruz
-        $(".resizable").resizable({ 
-            aspectRatio: true, 
-            handles: "all",
-            containment: "#canvas" 
-        }).resizable("disable");
+        $(".resizable").resizable({ aspectRatio: true, handles: "all" }).resizable("disable");
     });
 
+    // KUMANDA KOMUTLARI
     socket.on('toggle_edit', (data) => {
         if(data.status) {
             $(".draggable").draggable("enable").addClass("edit-active");
-            $(".resizable").resizable("enable"); // BÜYÜTME AKTİF
+            $(".resizable").resizable("enable");
         } else {
             $(".draggable").draggable("disable").removeClass("edit-active");
-            $(".resizable").resizable("disable"); // BÜYÜTME KAPALI
+            $(".resizable").resizable("disable");
+        }
+    });
+
+    // Senin yazdığın Slot yönetimi ve Aslan tetikleyicisi aynen korunmuştur
+    socket.on('execute_visual', (data) => {
+        const slotId = "slot" + data.slot;
+        const el = document.getElementById(slotId);
+        if (data.action === 'manage_slot' && el) {
+            if (data.name) {
+                el.innerHTML = `
+                    <div class="score-badge"><span class="points-display">0.0K</span></div>
+                    <img src="${data.avatar}" class="guest-avatar">
+                    <div style="color:white; font-size:11px; margin-top:5px;">${data.name}</div>`;
+            } else {
+                el.innerHTML = `<span class="plus-icon">+</span><span class="request-text">Request</span>`;
+            }
+        }
+        
+        if (data.action === 'lion_effect') {
+            $("#lion-overlay").fadeIn();
+            const v = document.getElementById('lion-vid');
+            v.play();
+            v.onended = () => { $("#lion-overlay").fadeOut(); };
         }
     });
 </script>
+</body>
+</html>
