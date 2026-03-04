@@ -7,108 +7,111 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
-        /* GENEL AYARLAR (FULL HD DÜZEN) */
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Inter', sans-serif; }
         #canvas { width: 100vw; height: 100vh; position: relative; }
 
-        /* HOST KAMERASI (Sol Taraf) */
+        /* HOST KAMERASI (MAVİ ÇERÇEVE) */
         #host-cam { 
-            width: 480px; height: 850px; /* Filippo gibi uzun */
+            width: 450px; height: 800px; 
             border: 3px solid #3498db; 
             position: absolute; top: 20px; left: 20px;
-            overflow: hidden; background: #111;
+            background: #111; overflow: hidden;
         }
         #host-cam img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* GUEST KUTULARI KONTEYNERİ (Sağ Taraf) */
-        #guest-side {
+        /* 8'Lİ NİZAMİ IZGARA (GRID) */
+        #guest-grid { 
             position: absolute; top: 20px; right: 20px;
-            display: flex; flex-direction: column; gap: 10px;
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); /* 2 Sütunlu tam ızgara */
+            gap: 6px; /* Kutular arası HD mesafe */
+            width: 320px; 
         }
 
-        /* ÜSTTEKİ 6 KUTU (3x2 Düzen) */
-        #top-six {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 360px;
+        .slot {
+            aspect-ratio: 1/1; 
+            background: rgba(20, 20, 20, 0.95); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 8px; 
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
         }
 
-        /* ALTTAKİ 2 KUTU (Yan Yana) */
-        #bottom-two {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 360px;
+        /* REQUEST YAZISI VE ARTI İKONU */
+        .plus-icon { color: #fff; font-size: 32px; opacity: 0.4; font-weight: 100; }
+        .request-text { color: #fff; font-size: 13px; margin-top: 6px; opacity: 0.6; text-transform: capitalize; }
+
+        /* ASLAN KUTUSU */
+        #lion-overlay { 
+            position: absolute; top: 20%; left: 25%; 
+            width: 600px; display: none; z-index: 10000; 
         }
+        #lion-vid { width: 100%; height: auto; }
 
-        /* ORTAK KUTU STİLİ (HD Kalite ve İdeal Boyut) */
-        .slot { 
-            aspect-ratio: 1/1; /* Tam kare kutular */
-            background: rgba(25, 25, 25, 0.95); /* Filippo'nun koyu teması */
-            border: 1px solid rgba(255, 255, 255, 0.1); /* İnce HD çizgi */
-            border-radius: 6px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center;
-        }
-
-        /* YAZI STİLLERİ */
-        .req-text { font-size: 14px; color: #777; margin-top: 8px; font-weight: 500; text-transform: capitalize; }
-        .plus-icon { font-size: 32px; color: #444; font-weight: 100; }
-
-        /* EDİT MODU ÇİZGİLERİ */
-        .edit-active { border: 2px dashed #00f2ea !important; }
+        /* EDİT MODU GÖRSEL YARDIMCILAR */
+        .edit-active { border: 2px dashed #00f2ea !important; z-index: 999; }
         .ui-resizable-handle { background: #00f2ea; width: 12px; height: 12px; border-radius: 50%; }
-
-        /* PUAN VE PROFİL */
-        .score-badge { position: absolute; top: 8px; left: 8px; font-size: 12px; color: white; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 10px; }
-        .guest-avatar { width: 65%; border-radius: 50%; border: 2px solid #00f2ea; }
     </style>
 </head>
 <body>
 
 <div id="canvas">
-    <div id="host-cam" class="draggable resizable">
-        <img src="3333.jpeg">
+    <div id="host-cam" class="draggable resizable"><img src="3333.jpeg"></div>
+
+    <div id="guest-grid" class="draggable resizable">
+        <div class="slot" id="slot0"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot1"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot2"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot3"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot4"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot5"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot6"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
+        <div class="slot" id="slot7"><span class="plus-icon">+</span><span class="request-text">Request</span></div>
     </div>
 
-    <div id="guest-side" class="draggable resizable">
-        <div id="top-six">
-            <div id="slot0" class="slot"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
-            <div id="slot1" class="slot"><div class="plus-icon">+</span><div class="req-text">Request</div></div>
-            <div id="slot2" class="slot"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
-            <div id="slot3" class="slot"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
-            <div id="slot4" class="slot"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
-            <div id="slot5" class="slot"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
-        </div>
-        <div id="bottom-two">
-            <div id="slot6" class="slot"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
-            <div id="slot7" class="slot"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
-        </div>
+    <div id="lion-overlay" class="draggable resizable">
+        <video id="lion-vid"><source src="aslan.mp4" type="video/mp4"></video>
     </div>
 </div>
 
 <script>
-    const socket = io(); // Render bağlantısı
-
+    const socket = io();
+    
     $(function() {
         $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
         $(".resizable").resizable({ aspectRatio: true, handles: "all" }).resizable("disable");
     });
 
+    // KUMANDADAN GELEN DÜZENLEME MODU
     socket.on('toggle_edit', (data) => {
         if(data.status) {
             $(".draggable").draggable("enable").addClass("edit-active");
             $(".resizable").resizable("enable");
+            $("#lion-overlay").show().css("background", "rgba(255,165,0,0.1)");
         } else {
             $(".draggable").draggable("disable").removeClass("edit-active");
             $(".resizable").resizable("disable");
+            $("#lion-overlay").hide().css("background", "transparent");
         }
     });
 
-    socket.on('update_host', (data) => {
-        const el = $(`#slot${data.slot}`);
-        if(data.user) {
-            el.html(`
-                <div class="score-badge">0.0K</div>
-                <img src="${data.user.avatar}" class="guest-avatar">
-                <div style="color:white; font-size:12px; margin-top:5px;">${data.user.name}</div>
-            `);
-        } else {
-            el.html(`<div class="plus-icon">+</div><div class="req-text">Request</div>`);
+    // ASLAN VE SLOT GÜNCELLEME
+    socket.on('execute_visual', (data) => {
+        if (data.action === 'lion_effect' || data.action === 'lion_trigger') {
+            $("#lion-overlay").fadeIn();
+            const v = document.getElementById('lion-vid');
+            v.play();
+            v.onended = () => { if(!$(".draggable").hasClass('edit-active')) $("#lion-overlay").fadeOut(); };
+        }
+        
+        const slotId = "slot" + data.slot;
+        const el = document.getElementById(slotId);
+        if (data.action === 'manage_slot' && el) {
+            if (data.name) {
+                el.innerHTML = `<img src="${data.avatar}" style="width:65%; border-radius:50%; border:2px solid #00f2ea;"><div style="color:white; font-size:12px; margin-top:6px;">${data.name}</div>`;
+            } else {
+                el.innerHTML = `<span class="plus-icon">+</span><span class="request-text">Request</span>`;
+            }
         }
     });
 </script>
