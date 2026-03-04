@@ -9,8 +9,8 @@
         :root { --bg: #0d0f14; --card: #16181d; --accent: #3498db; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 10px; margin: 0; }
         .top-nav { display: flex; gap: 5px; margin-bottom: 20px; }
-        .nav-btn { background: #24272e; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 11px; }
-        .active-edit { background: #fff !important; color: #000 !important; }
+        .nav-btn { background: #24272e; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 11px; transition: 0.3s; }
+        .active-edit { background: #f39c12 !important; color: #000 !important; box-shadow: 0 0 15px rgba(243, 156, 18, 0.4); }
         .slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .slot-box { background: var(--card); border: 1px solid #333; border-radius: 10px; padding: 10px; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
         .btn-add { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #444; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -22,20 +22,27 @@
     </style>
 </head>
 <body>
+    <div style="text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 15px; color: var(--accent);">Orender Remote Control</div>
+    
     <div class="top-nav">
         <button id="editBtn" class="nav-btn" onclick="toggleEdit()">Edit Move: Off</button>
     </div>
+
     <div class="slot-grid" id="slotContainer"></div>
+
 <script>
     const socket = io();
     let isEdit = false;
     const slots = Array(8).fill(null);
 
+    // DÜZENLEME MODUNU AÇ/KAPAT
     function toggleEdit() {
         isEdit = !isEdit;
         const btn = document.getElementById('editBtn');
-        btn.innerText = `Edit Move: ${isEdit ? 'On' : 'Off'}`;
+        btn.innerText = `Edit Move: ${isEdit ? 'ON (Düzenle)' : 'Off'}`;
         btn.classList.toggle('active-edit', isEdit);
+        
+        // Sunucuya ve oradan Host'a gönderir
         socket.emit('toggle_edit', { status: isEdit });
     }
 
@@ -60,7 +67,7 @@
     }
 
     function add(i) {
-        const n = prompt("İsim:");
+        const n = prompt("Kullanıcı Adı:");
         if(n) {
             const a = `https://api.dicebear.com/7.x/avataaars/svg?seed=${n}`;
             slots[i] = { name: n, avatar: a };
@@ -75,7 +82,11 @@
         render();
     }
 
-    function lion(i) { socket.emit('execute_visual', { action: 'lion_trigger', slot: i }); }
+    // ASLAN GÖNDERME
+    function lion(i) { 
+        socket.emit('execute_visual', { action: 'lion_trigger', slot: i }); 
+    }
+
     render();
 </script>
 </body>
