@@ -7,50 +7,50 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
         #canvas { width: 100vw; height: 100vh; position: relative; }
 
-        /* HOST KAMERASI (MAVİ ÇERÇEVE) */
+        /* HOST KAMERASI */
         #host-cam { 
-            width: 450px; height: 800px; 
+            width: 420px; height: 750px; 
             border: 3px solid #3498db; 
             position: absolute; top: 20px; left: 20px;
             background: #111; overflow: hidden;
         }
         #host-cam img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 8'Lİ NİZAMİ IZGARA (GRID) */
+        /* KÜÇÜLTÜLMÜŞ 8'Lİ IZGARA */
         #guest-grid { 
             position: absolute; top: 20px; right: 20px;
             display: grid; 
-            grid-template-columns: repeat(2, 1fr); /* 2 Sütunlu tam ızgara */
-            gap: 6px; /* Kutular arası HD mesafe */
-            width: 320px; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 5px; 
+            width: 260px; /* Genişliği 320'den 260'a düşürerek kutuları küçülttüm */
         }
 
         .slot {
             aspect-ratio: 1/1; 
-            background: rgba(20, 20, 20, 0.95); 
+            background: rgba(20, 20, 20, 0.9); 
             border: 1px solid rgba(255, 255, 255, 0.1); 
-            border-radius: 8px; 
+            border-radius: 6px; 
             display: flex; flex-direction: column;
             align-items: center; justify-content: center; position: relative;
         }
 
-        /* REQUEST YAZISI VE ARTI İKONU */
-        .plus-icon { color: #fff; font-size: 32px; opacity: 0.4; font-weight: 100; }
-        .request-text { color: #fff; font-size: 13px; margin-top: 6px; opacity: 0.6; text-transform: capitalize; }
+        /* DAHA KÜÇÜK İKON VE YAZI */
+        .plus-icon { color: #fff; font-size: 24px; opacity: 0.4; }
+        .request-text { color: #fff; font-size: 10px; margin-top: 4px; opacity: 0.5; }
 
         /* ASLAN KUTUSU */
         #lion-overlay { 
             position: absolute; top: 20%; left: 25%; 
-            width: 600px; display: none; z-index: 10000; 
+            width: 550px; display: none; z-index: 10000; 
         }
         #lion-vid { width: 100%; height: auto; }
 
-        /* EDİT MODU GÖRSEL YARDIMCILAR */
+        /* EDİT MODU */
         .edit-active { border: 2px dashed #00f2ea !important; z-index: 999; }
-        .ui-resizable-handle { background: #00f2ea; width: 12px; height: 12px; border-radius: 50%; }
+        .ui-resizable-handle { background: #00f2ea; width: 10px; height: 10px; border-radius: 50%; }
     </style>
 </head>
 <body>
@@ -82,7 +82,6 @@
         $(".resizable").resizable({ aspectRatio: true, handles: "all" }).resizable("disable");
     });
 
-    // KUMANDADAN GELEN DÜZENLEME MODU
     socket.on('toggle_edit', (data) => {
         if(data.status) {
             $(".draggable").draggable("enable").addClass("edit-active");
@@ -95,7 +94,6 @@
         }
     });
 
-    // ASLAN VE SLOT GÜNCELLEME
     socket.on('execute_visual', (data) => {
         if (data.action === 'lion_effect' || data.action === 'lion_trigger') {
             $("#lion-overlay").fadeIn();
@@ -108,7 +106,7 @@
         const el = document.getElementById(slotId);
         if (data.action === 'manage_slot' && el) {
             if (data.name) {
-                el.innerHTML = `<img src="${data.avatar}" style="width:65%; border-radius:50%; border:2px solid #00f2ea;"><div style="color:white; font-size:12px; margin-top:6px;">${data.name}</div>`;
+                el.innerHTML = `<img src="${data.avatar}" style="width:60%; border-radius:50%; border:2px solid #00f2ea;"><div style="color:white; font-size:10px; margin-top:4px;">${data.name}</div>`;
             } else {
                 el.innerHTML = `<span class="plus-icon">+</span><span class="request-text">Request</span>`;
             }
