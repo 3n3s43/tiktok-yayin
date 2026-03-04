@@ -2,61 +2,62 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Orender Pro - Balanced HD</title>
+    <title>Orender Pro - TikTok Mobile Edition</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        /* TIKTOK MOBİL FORMATI İÇİN ARKA PLAN */
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
         #canvas { width: 100vw; height: 100vh; position: relative; }
 
-        /* ✅ HOST VE REQUEST AYNI BOY/EN AYARI */
+        /* ✅ TELEFON EKRANINA SIĞACAK DAR VE UZUN TASARIM */
         .sync-box {
-            width: 320px; /* Her iki bloğun eni aynı */
-            height: 640px; /* Her iki bloğun boyu aynı */
-            position: absolute; top: 50px;
+            width: 200px; /* Telefon ekranı için eni daralttık */
+            height: 550px; /* Dikeyde uzunluk verdik */
+            position: absolute; top: 15%; /* Ekranda ortalı dursun */
         }
 
+        /* HOST KAMERASI (SOL) */
         #host-cam { 
-            left: 50px;
-            border: 2px solid rgba(52, 152, 219, 0.7); 
-            box-shadow: 0 0 20px rgba(52, 152, 219, 0.2);
-            background: #0a0a0a; border-radius: 12px; overflow: hidden;
+            left: calc(50% - 205px); /* Ekranın tam ortasına göre hizalama */
+            border: 2px solid rgba(52, 152, 219, 0.6); 
+            background: #0a0a0a; border-radius: 8px; overflow: hidden;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
         }
         #host-cam img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* ✅ 8'Lİ IZGARA - HOST İLE TAM UYUMLU */
+        /* 8'Lİ REQUEST (SAĞ) */
         #guest-grid { 
-            right: 50px;
+            left: calc(50% + 5px); /* Host kamerasının hemen yanı */
             display: grid; grid-template-columns: 1fr 1fr; 
-            grid-template-rows: repeat(4, 1fr);
-            gap: 8px; 
+            grid-template-rows: repeat(4, 1fr); gap: 4px; 
         }
 
         .slot {
             background: linear-gradient(145deg, #1a1a1a, #0d0d0d); 
             border: 1px solid rgba(255, 255, 255, 0.08); 
-            border-radius: 10px; display: flex; flex-direction: column;
+            border-radius: 6px; display: flex; flex-direction: column;
             align-items: center; justify-content: center; position: relative;
         }
 
-        .plus-icon { color: #444; font-size: 28px; }
-        .req-text { color: #555; font-size: 11px; margin-top: 4px; font-weight: bold; text-transform: uppercase; }
+        .plus-icon { color: #444; font-size: 20px; }
+        .req-text { color: #555; font-size: 9px; margin-top: 2px; font-weight: bold; text-transform: uppercase; }
 
-        /* ASLAN EFEKTİ */
+        /* ASLAN KATMANI */
         #lion-overlay { 
-            position: absolute; top: 10%; left: 15%; 
-            width: 700px; display: none; z-index: 10000; 
-            filter: drop-shadow(0 0 40px rgba(255, 165, 0, 0.6));
+            position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
+            width: 500px; display: none; z-index: 10000; 
+            filter: drop-shadow(0 0 30px rgba(255, 165, 0, 0.6));
         }
         #lion-vid { width: 100%; height: auto; }
 
-        /* EDİT MODU */
+        /* EDİT MODU ÇİZGİLERİ */
         .edit-active { border: 2px dashed #00f2ea !important; z-index: 999; }
-        .ui-resizable-handle { background: #00f2ea; width: 12px; height: 12px; border-radius: 50%; }
+        .ui-resizable-handle { background: #00f2ea; width: 10px; height: 10px; border-radius: 50%; }
 
-        .guest-avatar { width: 65%; border-radius: 50%; border: 2px solid #00f2ea; box-shadow: 0 0 15px rgba(0, 242, 234, 0.3); }
+        .guest-avatar { width: 70%; border-radius: 50%; border: 2px solid #00f2ea; }
     </style>
 </head>
 <body>
@@ -81,7 +82,7 @@
 </div>
 
 <script>
-    const socket = io(); //
+    const socket = io();
 
     $(function() {
         $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
@@ -111,7 +112,7 @@
         const el = document.getElementById(slotId);
         if (data.action === 'manage_slot' && el) {
             if (data.name) {
-                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar"><div style="color:#00f2ea; font-size:11px; margin-top:6px; font-weight:bold;">${data.name}</div>`;
+                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar"><div style="color:#00f2ea; font-size:10px; margin-top:4px; font-weight:bold;">${data.name}</div>`;
             } else {
                 el.innerHTML = `<div class="plus-icon">+</div><div class="req-text">Req</div>`;
             }
