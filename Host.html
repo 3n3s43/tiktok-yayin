@@ -2,70 +2,83 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Orender Pro - TikTok Reji</title>
+    <title>Orender Pro - TikTok Elegant</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-        #canvas { width: 100vw; height: 100vh; position: relative; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; width: 100vw; height: 100vh; }
+        #canvas { width: 100%; height: 100%; position: relative; }
 
-        /* ✅ HOST KAMERA ALANI */
+        /* HOST KAMERA */
         #host-cam { 
-            width: 320px; height: 450px;
-            position: absolute; top: 10%; left: calc(50% - 330px);
-            border: 1.5px solid #1da1f2; background: #000;
-            border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;
+            width: 230px; height: 440px; 
+            position: absolute; top: 40px; left: 15px;
+            border: 1px solid #3498db; background: #000;
+            border-radius: 2px; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
         }
-        #host-cam img, #host-cam video { width: 100%; height: 100%; object-fit: cover; }
+        #host-cam img, #host-cam video { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+        
+        .host-controls { z-index: 100; display: none; flex-direction: column; gap: 10px; }
+        .host-btn { background: #00f2ea; color: #000; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; }
 
-        /* ✅ 8'Lİ REQUEST GRİD (TAM TIKTOK STİLİ) */
+        /* 8'Lİ REQUEST (ZARİFLEŞTİRİLMİŞ YAZILAR) */
         #guest-grid { 
-            width: 280px; height: 560px;
-            position: absolute; top: 10%; left: calc(50% + 10px);
-            display: grid; grid-template-columns: 1fr 1fr; 
-            grid-template-rows: repeat(4, 1fr); gap: 6px; 
+            width: 170px; height: 440px; 
+            position: absolute; top: 40px; left: 245px; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            grid-template-rows: repeat(4, 1fr); 
+            gap: 0; 
         }
-
-        .slot {
-            /* Arka planı tamamen siyah değil, hafif şeffaf gri yaptık (Glassmorphism) */
+        .slot { 
             background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 2px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            position: relative;
+            border: none; 
+            display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
         }
 
-        /* Artı İkonu */
+        /* ✅ ARTI İŞARETİ: KALINLIĞI DÜŞÜRÜLDÜ */
         .plus-icon { 
-            color: rgba(255, 255, 255, 0.4); 
-            font-size: 24px; font-weight: 300; margin-bottom: 2px;
+            color: #ffffff; 
+            font-size: 24px; 
+            font-weight: 400; /* Daha ince */
+            opacity: 0.7; /* Birkaç tık şeffaflık */
+            margin-bottom: 2px;
         }
 
-        /* Request Yazısı */
+        /* ✅ REQUEST YAZISI: ZARİF BEYAZ */
         .req-text { 
-            color: rgba(255, 255, 255, 0.3); 
-            font-size: 11px; font-weight: 500; letter-spacing: 0.5px;
+            color: #ffffff; 
+            font-size: 11px; 
+            font-weight: 400; /* Kalınlık düşürüldü */
+            opacity: 0.6; /* Birkaç tık şeffaflık */
+            letter-spacing: 0.5px;
         }
 
-        /* Misafir Avatarları */
-        .guest-avatar { width: 65px; height: 65px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
-        .guest-name { color: #fff; font-size: 11px; margin-top: 6px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-
-        /* ✅ ASLAN */
-        #lion-overlay { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); width: 500px; display: none; z-index: 9999; }
+        /* ASLAN */
+        #lion-overlay { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 550px; display: none; z-index: 9999; pointer-events: none; }
         #lion-vid { width: 100%; height: auto; }
 
-        /* Edit Modu */
-        .edit-active { border: 2px dashed #00f2ea !important; }
-        .ui-resizable-handle { background: #00f2ea; width: 8px; height: 8px; border-radius: 50%; }
+        .edit-active { border: 2px dashed #00f2ea !important; z-index: 1000; }
+        .edit-active .host-controls { display: flex; }
+        .guest-avatar { width: 80%; border-radius: 50%; border: 1.5px solid #fff; }
     </style>
 </head>
 <body>
 
 <div id="canvas">
-    <div id="host-cam" class="draggable resizable"><img src="3333.jpeg" id="host-img"></div>
+    <div id="host-cam" class="draggable resizable">
+        <img id="host-img" src="3333.jpeg">
+        <video id="webcam" autoplay playsinline style="display:none;"></video>
+        <div class="host-controls">
+            <button class="host-btn" onclick="startCamera()">KAMERA AÇ</button>
+            <button class="host-btn" onclick="document.getElementById('fileInput').click()">RESİM SEÇ</button>
+            <input type="file" id="fileInput" style="display:none" accept="image/*" onchange="loadImg(event)">
+        </div>
+    </div>
 
     <div id="guest-grid" class="draggable resizable">
         <div class="slot" id="slot0"><div class="plus-icon">+</div><div class="req-text">Request</div></div>
@@ -83,10 +96,27 @@
 
 <script>
     const socket = io();
+
     $(function() {
-        $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
-        $(".resizable").resizable({ aspectRatio: false }).resizable("disable");
+        $(".draggable").draggable({ containment: "parent" }).draggable("disable");
+        $(".resizable").resizable({ aspectRatio: false, handles: "all" }).resizable("disable");
     });
+
+    async function startCamera() {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const v = document.getElementById('webcam');
+        v.srcObject = stream; v.style.display = 'block';
+        document.getElementById('host-img').style.display = 'none';
+    }
+
+    function loadImg(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const img = document.getElementById('host-img');
+            img.src = URL.createObjectURL(file);
+            img.style.display = 'block'; document.getElementById('webcam').style.display = 'none';
+        }
+    }
 
     socket.on('toggle_edit', (data) => {
         const state = data.status ? "enable" : "disable";
@@ -98,16 +128,15 @@
         if (data.action === 'lion_trigger') {
             $("#lion-overlay").fadeIn(200);
             const v = document.getElementById('lion-vid');
-            v.play();
-            v.onended = () => $("#lion-overlay").fadeOut(300);
+            v.currentTime = 0; v.play();
+            v.onended = () => { if(!$(".draggable").hasClass('edit-active')) $("#lion-overlay").fadeOut(300); };
         }
-        
         if (data.action === 'manage_slot') {
             const el = document.getElementById("slot" + data.slot);
-            if (data.name) {
-                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar"><div class="guest-name">${data.name}</div>`;
-                el.style.background = "transparent";
-            } else {
+            if (el && data.name) {
+                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar">`;
+                el.style.background = "#0a0a0a";
+            } else if (el) {
                 el.innerHTML = `<div class="plus-icon">+</div><div class="req-text">Request</div>`;
                 el.style.background = "rgba(255, 255, 255, 0.05)";
             }

@@ -6,22 +6,36 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         body { background: #0b0d11; color: #fff; font-family: sans-serif; padding: 15px; text-align: center; }
-        .card { background: #16191f; border-radius: 12px; padding: 20px; border: 1px solid #252932; max-width: 400px; margin: auto; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .slot-btn { background: #1c2028; border: 1px solid #2d323e; padding: 15px; border-radius: 10px; }
+        .card { background: #16191f; border-radius: 12px; padding: 20px; border: 1px solid #252932; max-width: 420px; margin: auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .slot-btn { background: #1c2028; border: 1px solid #2d323e; padding: 12px; border-radius: 10px; }
         button { border-radius: 6px; cursor: pointer; border: none; font-weight: bold; transition: 0.3s; }
-        .btn-main { background: #2d323e; color: #fff; padding: 12px; margin: 5px; width: 45%; }
+        
+        /* Ana Kontrol Butonları */
+        .btn-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 15px; }
+        .btn-main { background: #2d323e; color: #fff; padding: 12px; flex: 1 1 45%; min-width: 140px; }
         .btn-lion { background: #ff9f43; color: #fff; box-shadow: 0 4px 15px rgba(255,159,67,0.3); }
+        .btn-action { background: #3498db; color: #fff; font-size: 11px; } /* Kamera & Resim Butonu */
+        
         .btn-add { background: #00f2ea; color: #000; width: 100%; padding: 8px; margin-top: 5px; }
         .active-edit { background: #eb4d4b !important; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h3>🦁 Reji Paneli</h3>
-        <div style="display:flex; justify-content: center;">
+        <h3>🦁 Reji Kontrol Paneli</h3>
+        
+        <div class="btn-group">
             <button class="btn-main" id="editBtn" onclick="sendEdit()">Düzenle: Kapalı</button>
             <button class="btn-main btn-lion" onclick="triggerLion()">ASLAN PATLAT!</button>
+        </div>
+
+        <div style="margin-bottom: 20px; padding: 10px; border-top: 1px solid #252932;">
+            <p style="font-size: 12px; color: #888;">Host Görselini Değiştir:</p>
+            <div style="display:flex; gap: 10px;">
+                <button class="btn-main btn-action" onclick="hostAction('camera')">📸 Kamerayı Aç</button>
+                <button class="btn-main btn-action" onclick="hostAction('upload')">🖼️ Resim Seç</button>
+            </div>
         </div>
         
         <div class="grid" id="remote-slots"></div>
@@ -31,7 +45,7 @@
     const socket = io(); 
     let editMode = false;
 
-    // Düzenleme Modu (Sürükle-Bırak-Boyutlandır)
+    // Düzenleme Modu
     function sendEdit() {
         editMode = !editMode;
         const btn = document.getElementById('editBtn');
@@ -40,9 +54,19 @@
         socket.emit('toggle_edit', { status: editMode });
     }
 
-    // ✅ ASLAN TETİKLEME (Host'taki execute_visual'a göre uyarlandı)
+    // Aslan Tetikleme
     function triggerLion() {
         socket.emit('execute_visual', { action: 'lion_trigger' });
+    }
+
+    // ✅ Kamera/Resim Komutu Gönderme
+    function hostAction(type) {
+        if (!editMode) {
+            alert("Önce Düzenle modunu açmalısın!");
+            return;
+        }
+        // Bu komut Host tarafındaki butonları tetiklemek içindir
+        alert("Host ekranına geçip ortadaki butonları kullanabilirsin.");
     }
 
     // 8 Slot oluştur
@@ -55,7 +79,7 @@
             </div>`;
     }
 
-    // ✅ SLOT YÖNETİMİ (Host'taki execute_visual'a göre uyarlandı)
+    // Slot Yönetimi
     async function addUser(id) {
         const handle = prompt("TikTok Kullanıcı Adı:");
         if(handle) {
