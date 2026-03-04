@@ -2,50 +2,54 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Orender Pro - TikTok Mobile Edition</title>
+    <title>Orender Pro - TikTok Reji Edition</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
-        /* TIKTOK MOBİL FORMATI İÇİN ARKA PLAN */
         body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
         #canvas { width: 100vw; height: 100vh; position: relative; }
 
-        /* ✅ TELEFON EKRANINA SIĞACAK DAR VE UZUN TASARIM */
         .sync-box {
-            width: 200px; /* Telefon ekranı için eni daralttık */
-            height: 550px; /* Dikeyde uzunluk verdik */
-            position: absolute; top: 15%; /* Ekranda ortalı dursun */
+            width: 200px; height: 550px; 
+            position: absolute; top: 15%; 
         }
 
-        /* HOST KAMERASI (SOL) */
+        /* ✅ HOST KAMERA / RESİM ALANI */
         #host-cam { 
-            left: calc(50% - 205px); /* Ekranın tam ortasına göre hizalama */
+            left: calc(50% - 205px); 
             border: 2px solid rgba(52, 152, 219, 0.6); 
-            background: #0a0a0a; border-radius: 8px; overflow: hidden;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            background: #000; border-radius: 8px; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
         }
-        #host-cam img { width: 100%; height: 100%; object-fit: cover; }
+        #host-cam img, #host-cam video { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+        
+        /* Kamera ve Resim Butonları (Sadece Edit Modunda Görünür) */
+        .host-controls {
+            z-index: 10; display: none; flex-direction: column; gap: 10px;
+        }
+        .host-btn {
+            background: rgba(0, 242, 234, 0.8); border: none; padding: 5px 10px;
+            border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;
+        }
 
-        /* 8'Lİ REQUEST (SAĞ) */
+        /* ✅ 8'Lİ SİYAH REQUEST KUTUCUKLARI */
         #guest-grid { 
-            left: calc(50% + 5px); /* Host kamerasının hemen yanı */
+            left: calc(50% + 5px); 
             display: grid; grid-template-columns: 1fr 1fr; 
             grid-template-rows: repeat(4, 1fr); gap: 4px; 
         }
-
         .slot {
-            background: linear-gradient(145deg, #1a1a1a, #0d0d0d); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
+            background: #000 !important; /* Tam siyah */
+            border: 1px solid rgba(255, 255, 255, 0.1); 
             border-radius: 6px; display: flex; flex-direction: column;
             align-items: center; justify-content: center; position: relative;
         }
+        .plus-icon { color: #333; font-size: 20px; }
+        .req-text { color: #fff; font-size: 9px; margin-top: 2px; font-weight: bold; text-transform: uppercase; }
 
-        .plus-icon { color: #444; font-size: 20px; }
-        .req-text { color: #555; font-size: 9px; margin-top: 2px; font-weight: bold; text-transform: uppercase; }
-
-        /* ASLAN KATMANI */
+        /* ✅ ASLAN KATMANI */
         #lion-overlay { 
             position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
             width: 500px; display: none; z-index: 10000; 
@@ -53,71 +57,9 @@
         }
         #lion-vid { width: 100%; height: auto; }
 
-        /* EDİT MODU ÇİZGİLERİ */
         .edit-active { border: 2px dashed #00f2ea !important; z-index: 999; }
+        .edit-active .host-controls { display: flex; }
         .ui-resizable-handle { background: #00f2ea; width: 10px; height: 10px; border-radius: 50%; }
-
         .guest-avatar { width: 70%; border-radius: 50%; border: 2px solid #00f2ea; }
     </style>
 </head>
-<body>
-
-<div id="canvas">
-    <div id="host-cam" class="sync-box draggable resizable"><img src="3333.jpeg"></div>
-
-    <div id="guest-grid" class="sync-box draggable resizable">
-        <div class="slot" id="slot0"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
-        <div class="slot" id="slot1"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
-        <div class="slot" id="slot2"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
-        <div class="slot" id="slot3"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
-        <div class="slot" id="slot4"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
-        <div class="slot" id="slot5"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
-        <div class="slot" id="slot6"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
-        <div class="slot" id="slot7"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
-    </div>
-
-    <div id="lion-overlay" class="draggable resizable">
-        <video id="lion-vid"><source src="aslan.mp4" type="video/mp4"></video>
-    </div>
-</div>
-
-<script>
-    const socket = io();
-
-    $(function() {
-        $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
-        $(".resizable").resizable({ aspectRatio: false, handles: "all" }).resizable("disable");
-    });
-
-    socket.on('toggle_edit', (data) => {
-        if(data.status) {
-            $(".draggable").draggable("enable").addClass("edit-active");
-            $(".resizable").resizable("enable");
-        } else {
-            $(".draggable").draggable("disable").removeClass("edit-active");
-            $(".resizable").resizable("disable");
-        }
-    });
-
-    socket.on('execute_visual', (data) => {
-        if (data.action === 'lion_effect' || data.action === 'lion_trigger') {
-            $("#lion-overlay").fadeIn(300);
-            const v = document.getElementById('lion-vid');
-            v.currentTime = 0;
-            v.play();
-            v.onended = () => { if(!$(".draggable").hasClass('edit-active')) $("#lion-overlay").fadeOut(500); };
-        }
-        
-        const slotId = "slot" + data.slot;
-        const el = document.getElementById(slotId);
-        if (data.action === 'manage_slot' && el) {
-            if (data.name) {
-                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar"><div style="color:#00f2ea; font-size:10px; margin-top:4px; font-weight:bold;">${data.name}</div>`;
-            } else {
-                el.innerHTML = `<div class="plus-icon">+</div><div class="req-text">Req</div>`;
-            }
-        }
-    });
-</script>
-</body>
-</html>
