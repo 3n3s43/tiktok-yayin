@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Orender Pro - Elite Edition</title>
+    <title>Orender Pro - Balanced HD</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
@@ -11,124 +11,109 @@
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
         #canvas { width: 100vw; height: 100vh; position: relative; }
 
-        /* HOST KAMERASI - HD ÇERÇEVE */
+        /* ✅ HOST VE REQUEST AYNI BOY/EN AYARI */
+        .sync-box {
+            width: 320px; /* Her iki bloğun eni aynı */
+            height: 640px; /* Her iki bloğun boyu aynı */
+            position: absolute; top: 50px;
+        }
+
         #host-cam { 
-            width: 400px; height: 720px; 
-            border: 2px solid rgba(52, 152, 219, 0.8); 
-            box-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
-            position: absolute; top: 40px; left: 40px;
-            background: #0a0a0a; overflow: hidden; border-radius: 12px;
+            left: 50px;
+            border: 2px solid rgba(52, 152, 219, 0.7); 
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.2);
+            background: #0a0a0a; border-radius: 12px; overflow: hidden;
         }
         #host-cam img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 8'Lİ KÜÇÜK HD IZGARA */
+        /* ✅ 8'Lİ IZGARA - HOST İLE TAM UYUMLU */
         #guest-grid { 
-            position: absolute; top: 40px; right: 40px;
-            display: grid; grid-template-columns: repeat(2, 1fr); 
-            gap: 8px; width: 230px; 
+            right: 50px;
+            display: grid; grid-template-columns: 1fr 1fr; 
+            grid-template-rows: repeat(4, 1fr);
+            gap: 8px; 
         }
 
         .slot {
-            aspect-ratio: 1/1; 
-            background: linear-gradient(145deg, #1a1a1a, #0d0d0d); /* HD Derinlik */
-            border: 1px solid rgba(255, 255, 255, 0.05); 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
             border-radius: 10px; display: flex; flex-direction: column;
             align-items: center; justify-content: center; position: relative;
-            overflow: hidden;
         }
 
-        .plus-icon { color: #555; font-size: 26px; font-weight: 100; }
-        .request-text { color: #444; font-size: 10px; margin-top: 4px; font-weight: bold; text-transform: uppercase; }
+        .plus-icon { color: #444; font-size: 28px; }
+        .req-text { color: #555; font-size: 11px; margin-top: 4px; font-weight: bold; text-transform: uppercase; }
 
-        /* ASLAN KATMANI - PARLAMA EFEKTİ EKLENDİ */
+        /* ASLAN EFEKTİ */
         #lion-overlay { 
-            position: absolute; top: 15%; left: 20%; 
-            width: 650px; display: none; z-index: 10000; 
-            filter: drop-shadow(0 0 30px rgba(255, 165, 0, 0.5)); /* Aslan parlaması */
+            position: absolute; top: 10%; left: 15%; 
+            width: 700px; display: none; z-index: 10000; 
+            filter: drop-shadow(0 0 40px rgba(255, 165, 0, 0.6));
         }
         #lion-vid { width: 100%; height: auto; }
 
         /* EDİT MODU */
-        .edit-active { border: 2px dashed #00f2ea !important; opacity: 0.8; }
+        .edit-active { border: 2px dashed #00f2ea !important; z-index: 999; }
         .ui-resizable-handle { background: #00f2ea; width: 12px; height: 12px; border-radius: 50%; }
 
-        /* MİSAFİR AVATAR STİLİ */
-        .guest-avatar { 
-            width: 65%; border-radius: 50%; 
-            border: 2px solid #00f2ea;
-            box-shadow: 0 0 10px rgba(0, 242, 234, 0.4);
-        }
+        .guest-avatar { width: 65%; border-radius: 50%; border: 2px solid #00f2ea; box-shadow: 0 0 15px rgba(0, 242, 234, 0.3); }
     </style>
 </head>
 <body>
 
 <div id="canvas">
-    <div id="host-cam" class="draggable resizable"><img src="3333.jpeg"></div>
+    <div id="host-cam" class="sync-box draggable resizable"><img src="3333.jpeg"></div>
 
-    <div id="guest-grid" class="draggable resizable">
-        <div class="slot" id="slot0"><span class="plus-icon">+</span><span class="request-text">Req</span></div>
-        <div class="slot" id="slot1"><span class="plus-icon">+</span><span class="request-text">Req</span></div>
-        <div class="slot" id="slot2"><span class="plus-icon">+</span><span class="request-text">Req</span></div>
-        <div class="slot" id="slot3"><span class="plus-icon">+</span><span class="request-text">Req</span></div>
-        <div class="slot" id="slot4"><span class="plus-icon">+</span><span class="request-text">Req</span></div>
-        <div class="slot" id="slot5"><span class="plus-icon">+</span><span class="request-text">Req</span></div>
-        <div class="slot" id="slot6"><span class="plus-icon">+</span><span class="request-text">Req</span></div>
-        <div class="slot" id="slot7"><span class="plus-icon">+</span><span class="request-text">Req</span></div>
+    <div id="guest-grid" class="sync-box draggable resizable">
+        <div class="slot" id="slot0"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
+        <div class="slot" id="slot1"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
+        <div class="slot" id="slot2"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
+        <div class="slot" id="slot3"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
+        <div class="slot" id="slot4"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
+        <div class="slot" id="slot5"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
+        <div class="slot" id="slot6"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
+        <div class="slot" id="slot7"><div class="plus-icon">+</div><div class="req-text">Req</div></div>
     </div>
 
     <div id="lion-overlay" class="draggable resizable">
-        <video id="lion-vid" preload="auto">
-            <source src="aslan.mp4" type="video/mp4">
-        </video>
+        <video id="lion-vid"><source src="aslan.mp4" type="video/mp4"></video>
     </div>
 </div>
 
 <script>
-    const socket = io();
+    const socket = io(); //
 
     $(function() {
         $(".draggable").draggable({ containment: "#canvas" }).draggable("disable");
-        $(".resizable").resizable({ aspectRatio: true, handles: "all" }).resizable("disable");
+        $(".resizable").resizable({ aspectRatio: false, handles: "all" }).resizable("disable");
     });
 
     socket.on('toggle_edit', (data) => {
         if(data.status) {
             $(".draggable").draggable("enable").addClass("edit-active");
             $(".resizable").resizable("enable");
-            $("#lion-overlay").show().css("background", "rgba(255,165,0,0.1)");
         } else {
             $(".draggable").draggable("disable").removeClass("edit-active");
             $(".resizable").resizable("disable");
-            $("#lion-overlay").hide().css("background", "transparent");
         }
     });
 
     socket.on('execute_visual', (data) => {
-        // ASLAN TETİKLEME
         if (data.action === 'lion_effect' || data.action === 'lion_trigger') {
+            $("#lion-overlay").fadeIn(300);
             const v = document.getElementById('lion-vid');
-            $("#lion-overlay").stop(true, true).fadeIn(400);
             v.currentTime = 0;
             v.play();
-            v.onended = () => { 
-                if(!$(".draggable").hasClass('edit-active')) $("#lion-overlay").fadeOut(800); 
-            };
+            v.onended = () => { if(!$(".draggable").hasClass('edit-active')) $("#lion-overlay").fadeOut(500); };
         }
         
-        // SLOT YÖNETİMİ
         const slotId = "slot" + data.slot;
         const el = document.getElementById(slotId);
         if (data.action === 'manage_slot' && el) {
             if (data.name) {
-                el.innerHTML = `
-                    <img src="${data.avatar}" class="guest-avatar">
-                    <div style="color:#00f2ea; font-size:10px; margin-top:5px; font-weight:bold;">${data.name}</div>
-                `;
-                $(el).css("border", "1px solid #00f2ea");
+                el.innerHTML = `<img src="${data.avatar}" class="guest-avatar"><div style="color:#00f2ea; font-size:11px; margin-top:6px; font-weight:bold;">${data.name}</div>`;
             } else {
-                el.innerHTML = `<span class="plus-icon">+</span><span class="request-text">Req</span>`;
-                $(el).css("border", "1px solid rgba(255, 255, 255, 0.05)");
+                el.innerHTML = `<div class="plus-icon">+</div><div class="req-text">Req</div>`;
             }
         }
     });
