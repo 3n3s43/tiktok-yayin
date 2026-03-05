@@ -7,55 +7,95 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif; color: white; }
         #canvas { width: 100vw; height: 100vh; position: relative; }
         
-        /* Draggable/Resizable Temel Yapı */
-        #host-cam { width: 230px; height: 440px; position: absolute; top: 40px; left: 15px; border: 1px solid #3498db; border-radius: 4px; overflow: hidden; background: #111; }
+        /* Host Kamera (Daraltılmış Dikey Form) */
+        #host-cam { 
+            width: 200px; 
+            height: 440px; 
+            position: absolute; 
+            top: 40px; 
+            left: 15px; 
+            border: 1.5px solid #3498db; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            background: #111; 
+        }
         #host-cam img { width: 100%; height: 100%; object-fit: cover; }
-        #guest-grid { width: 180px; height: 440px; position: absolute; top: 40px; left: 250px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 4px; }
         
-        /* Slot ve Request Görünümü */
-        .slot { background: rgba(255, 255, 255, 0.05); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; }
-        .plus-icon { color: #888; font-size: 24px; margin-bottom: 2px; }
-        .req-text { color: #888; font-size: 11px; font-weight: 500; }
+        /* Misafir Paneli (Çizgisiz & Bitişik Saf Siyah) */
+        #guest-grid { 
+            width: 180px; 
+            height: 440px; 
+            position: absolute; 
+            top: 40px; 
+            left: 220px; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            grid-template-rows: repeat(4, 1fr); 
+            gap: 0; 
+            background: transparent; 
+        }
+        
+        /* Slot Yapısı */
+        .slot { 
+            background: #000; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            border: none; 
+        }
+        
+        /* Boş Slot Görünümü (Yazı ve İkon Belirginleştirildi) */
+        .plus-icon { 
+            color: #777; /* 2 tık daha beyazlatıldı */
+            font-size: 28px; 
+            font-weight: 200; 
+        }
+        .req-text { 
+            color: #888; /* 2 tık daha beyazlatıldı */
+            font-size: 11px; 
+            margin-top: -2px; 
+        }
 
-        /* DOLU KOLTUK TASARIMI (ttt.png baz alındı) */
+        /* Dolu Koltuk Detayları */
         .slot-score { 
-            position: absolute; top: 4px; left: 4px;
-            font-size: 10px; font-weight: bold; 
+            position: absolute; top: 5px; left: 5px;
+            font-size: 10px; font-weight: 700; 
             display: flex; align-items: center; gap: 4px; 
-            background: rgba(0,0,0,0.5); border-radius: 12px; 
-            padding: 2px 8px; color: #fff; z-index: 5;
+            background: rgba(0,0,0,0.45); border-radius: 12px; 
+            padding: 1.5px 8px; color: #fff; z-index: 5;
         }
-        .diamond-icon { width: 12px; height: 12px; background: #00f2ea; border-radius: 50%; box-shadow: 0 0 5px #00f2ea; }
+        .diamond-icon { width: 10px; height: 10px; background: #00f2ea; border-radius: 50%; box-shadow: 0 0 6px #00f2ea; }
+        .guest-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; margin-bottom: 2px; }
 
-        .guest-avatar { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; margin-top: 5px; }
-
-        /* Alt Bilgi Barı (İsim + Plus) */
-        .bottom-info {
-            position: absolute; bottom: 8px; left: 6px;
+        /* İsim ve Artı Butonu Kapsülü */
+        .info-pill {
+            position: absolute; bottom: 8px; left: 5px;
             display: flex; align-items: center;
-            background: rgba(0,0,0,0.6); border-radius: 12px;
-            padding: 2px 8px; max-width: 65%;
+            background: rgba(0,0,0,0.55); border-radius: 12px;
+            padding: 1px 7px; max-width: 70%; height: 18px;
         }
-        .guest-name { font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .mini-plus { font-size: 12px; font-weight: bold; margin-left: 5px; color: #ccc; }
+        .guest-name { font-size: 9px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #eee; }
+        .mini-plus { font-size: 11px; font-weight: 900; margin-left: 5px; color: #fff; opacity: 0.8; }
 
         /* Mikrofon Simgesi */
-        .mic-badge {
-            position: absolute; bottom: 8px; right: 6px;
-            width: 20px; height: 20px;
-            background: rgba(0,0,0,0.6); border-radius: 50%;
+        .mic-pill {
+            position: absolute; bottom: 8px; right: 5px;
+            width: 18px; height: 18px;
+            background: rgba(0,0,0,0.55); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
         }
-        .mic-badge svg { width: 12px; height: 12px; fill: #eee; }
+        .mic-pill svg { width: 11px; height: 11px; fill: #fff; opacity: 0.9; }
 
-        /* Aslan ve Düzenleme */
-        #lion-overlay { position: absolute; top: 50px; left: 50px; width: 300px; height: 300px; display: none; z-index: 9999; }
+        /* Aslan ve Edit Modu */
+        #lion-overlay { position: absolute; top: 50px; left: 50px; width: 320px; height: 320px; display: none; z-index: 9999; }
         #lion-vid { width: 100%; height: 100%; object-fit: contain; }
-        .edit-active { border: 2px dashed #00f2ea !important; z-index: 1000; }
-        .lion-edit-view { display: block !important; border: 2px dashed orange !important; opacity: 0.5; }
+        .edit-active { border: 2px dashed #00f2ea !important; z-index: 1000; cursor: move; }
+        .lion-edit-view { display: block !important; border: 2px dashed #f39c12 !important; opacity: 0.4; background: rgba(243, 156, 18, 0.1); }
     </style>
 </head>
 <body>
@@ -94,15 +134,17 @@
         if (data.action === 'manage_slot') {
             const el = document.getElementById("slot" + data.slot);
             if (data.name) {
-                // ttt.png'deki birebir görsel yapı
                 el.innerHTML = `
-                    <div class="slot-score"><div class="diamond-icon"></div><span>0.0K</span></div>
+                    <div class="slot-score">
+                        <div class="diamond-icon"></div>
+                        <span>0.0K</span>
+                    </div>
                     <img src="${data.avatar}" class="guest-avatar">
-                    <div class="bottom-info">
+                    <div class="info-pill">
                         <div class="guest-name">${data.name.toUpperCase()}</div>
                         <div class="mini-plus">+</div>
                     </div>
-                    <div class="mic-badge">
+                    <div class="mic-pill">
                         <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                     </div>`;
             } else { el.innerHTML = emptyHtml; }
