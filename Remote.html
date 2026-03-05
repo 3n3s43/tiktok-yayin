@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orender Remote</title>
+    <title>Orender Remote Control</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
         :root { --bg: #0d0f14; --card: #16181d; --accent: #3498db; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 10px; margin: 0; }
-        .top-nav { display: flex; gap: 5px; margin-bottom: 20px; }
-        .nav-btn { background: #24272e; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 11px; transition: 0.3s; }
-        .active-edit { background: #f39c12 !important; color: #000 !important; box-shadow: 0 0 15px rgba(243, 156, 18, 0.4); }
+        .top-nav { display: flex; gap: 5px; margin-bottom: 15px; }
+        .nav-btn { background: #24272e; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 11px; }
+        .active-edit { background: #f39c12 !important; color: #000 !important; }
+        
+        /* Edit Cam Paneli */
+        .remote-group { background: #252833; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        .group-title { font-size: 13px; font-weight: bold; margin-bottom: 12px; color: var(--accent); display: flex; justify-content: space-between; }
+        .slider-row { margin-bottom: 10px; }
+        .slider-row label { display: block; font-size: 10px; color: #aaa; margin-bottom: 4px; }
+        .slider-inner { display: flex; align-items: center; gap: 10px; }
+        input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+        .val-box { background: #111; padding: 2px 6px; border-radius: 4px; font-size: 10px; min-width: 25px; text-align: center; border: 1px solid #444; }
+
         .slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .slot-box { background: var(--card); border: 1px solid #333; border-radius: 10px; padding: 10px; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+        .slot-box { background: var(--card); border: 1px solid #333; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; justify-content: center; }
         .btn-add { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #444; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .user-info { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--accent); }
@@ -28,6 +38,26 @@
         <button id="editBtn" class="nav-btn" onclick="toggleEdit()">Edit Move: Off</button>
     </div>
 
+    <div class="remote-group">
+        <div class="group-title">Edit Cam <span>⚙️</span></div>
+        <div class="slider-row">
+            <label>Cam width (px)</label>
+            <div class="slider-inner"><input type="range" id="w-range" min="100" max="500" value="200" oninput="sendCamUpdate()"><div class="val-box" id="w-val">200</div></div>
+        </div>
+        <div class="slider-row">
+            <label>Cam height (px)</label>
+            <div class="slider-inner"><input type="range" id="h-range" min="100" max="800" value="440" oninput="sendCamUpdate()"><div class="val-box" id="h-val">440</div></div>
+        </div>
+        <div class="slider-row">
+            <label>Cam offset X (px)</label>
+            <div class="slider-inner"><input type="range" id="x-range" min="0" max="1000" value="15" oninput="sendCamUpdate()"><div class="val-box" id="x-val">15</div></div>
+        </div>
+        <div class="slider-row">
+            <label>Cam offset Y (px)</label>
+            <div class="slider-inner"><input type="range" id="y-range" min="0" max="1000" value="40" oninput="sendCamUpdate()"><div class="val-box" id="y-val">40</div></div>
+        </div>
+    </div>
+
     <div class="slot-grid" id="slotContainer"></div>
 
 <script>
@@ -35,14 +65,25 @@
     let isEdit = false;
     const slots = Array(8).fill(null);
 
-    // DÜZENLEME MODUNU AÇ/KAPAT
+    function sendCamUpdate() {
+        const settings = {
+            w: document.getElementById('w-range').value,
+            h: document.getElementById('h-range').value,
+            x: document.getElementById('x-range').value,
+            y: document.getElementById('y-range').value
+        };
+        document.getElementById('w-val').innerText = settings.w;
+        document.getElementById('h-val').innerText = settings.h;
+        document.getElementById('x-val').innerText = settings.x;
+        document.getElementById('y-val').innerText = settings.y;
+        socket.emit('update_cam_settings', settings);
+    }
+
     function toggleEdit() {
         isEdit = !isEdit;
         const btn = document.getElementById('editBtn');
-        btn.innerText = `Edit Move: ${isEdit ? 'ON (Düzenle)' : 'Off'}`;
+        btn.innerText = `Edit Move: ${isEdit ? 'ON' : 'Off'}`;
         btn.classList.toggle('active-edit', isEdit);
-        
-        // Sunucuya ve oradan Host'a gönderir
         socket.emit('toggle_edit', { status: isEdit });
     }
 
@@ -82,11 +123,7 @@
         render();
     }
 
-    // ASLAN GÖNDERME
-    function lion(i) { 
-        socket.emit('execute_visual', { action: 'lion_trigger', slot: i }); 
-    }
-
+    function lion(i) { socket.emit('execute_visual', { action: 'lion_trigger', slot: i }); }
     render();
 </script>
 </body>
