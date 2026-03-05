@@ -9,48 +9,57 @@
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: white; }
         #canvas { width: 100vw; height: 100vh; position: relative; }
         
-        /* Ana Kamera Alanı */
         #host-cam { 
             width: 200px; height: 440px; position: absolute; top: 40px; left: 15px; 
             border: 1.5px solid #3498db; border-radius: 4px; overflow: hidden; background: #111; z-index: 10; 
         }
         #host-cam img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Misafir Izgarası */
         #guest-grid { 
             width: 180px; height: 440px; position: absolute; top: 40px; left: 220px; 
             display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 0; 
         }
         
         .slot { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        /* Boş Slot Görünümü */
         .plus-icon { color: #555; font-size: 28px; font-weight: 200; }
         .req-text { color: #666; font-size: 10.5px; margin-top: -2px; font-weight: 500; }
 
-        /* PUAN ALANI VE İNCE FONT */
+        /* --- KRİSTAL BADGE VE İNCE FONT SİSTEMİ --- */
         .slot-score { 
             position: absolute; top: 7px; left: 7px; 
-            font-size: 10px; font-weight: 500; 
+            font-size: 10.5px; font-weight: 500; /* ddd.png'deki ince font */
             display: flex; align-items: center; gap: 4px; 
-            background: rgba(0,0,0,0.5); border-radius: 12px; 
-            padding: 2px 8px; color: #fff; z-index: 5;
-            letter-spacing: -0.1px;
+            background: rgba(0,0,0,0.5); border-radius: 14px; 
+            padding: 2px 9px 2px 3px; color: #fff; z-index: 5;
+            letter-spacing: -0.2px;
         }
 
-        /* 6 KÖŞELİ KRİSTAL YILDIZ BADGE */
-        .diamond-icon { 
-            width: 14px; height: 14px;
-            background: radial-gradient(circle, #ffffff 0%, #a2f2ff 40%, #00d2ff 100%);
-            clip-path: polygon(50% 0%, 65% 25%, 100% 25%, 80% 50%, 100% 75%, 65% 75%, 50% 100%, 35% 75%, 0% 75%, 20% 50%, 0% 25%, 35% 25%);
-            border: 0.8px solid rgba(255,255,255,0.8);
-            box-shadow: 0 0 5px rgba(0, 210, 255, 0.8);
-            display: inline-block;
+        /* YENİ: CAM KÜRE İÇİNDE PARLAYAN KRİSTAL YILDIZ */
+        .diamond-icon {
+            width: 17px; height: 17px;
+            position: relative; border-radius: 50%;
+            /* Kristal derinlik geçişi */
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #00d2ff 45%, #0081a7 100%);
+            border: 0.5px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.7), inset 0 0 3px rgba(255, 255, 255, 0.5);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Küre içindeki beyaz keskin yıldız */
+        .diamond-icon::after {
+            content: ''; width: 10px; height: 10px; background: #fff;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            filter: drop-shadow(0 0 1px #fff);
+        }
+
+        /* Kristal yüzeyindeki parlama yansıması */
+        .diamond-icon::before {
+            content: ''; position: absolute; top: 2px; left: 3px; width: 5px; height: 3px;
+            background: rgba(255, 255, 255, 0.6); border-radius: 50%; transform: rotate(-35deg);
         }
 
         .guest-avatar { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; margin-bottom: 5px; }
 
-        /* İSİMLİK VE ARTI BUTONU KİLİTLİ PANEL */
         .info-pill {
             position: absolute; bottom: 10px; left: 6px; display: flex; align-items: center; justify-content: space-between;
             background: rgba(0,0,0,0.6); border-radius: 12px; padding: 0 4px 0 8px; width: 66px; height: 21px; 
@@ -63,7 +72,6 @@
         }
         .mini-plus { font-size: 11px; font-weight: bold; color: #fff; }
 
-        /* MUTE MİKROFON İKONU */
         .mic-pill { position: absolute; bottom: 10px; right: 6px; width: 21px; height: 21px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .mic-pill svg { width: 13px; height: 13px; fill: #fff; }
 
@@ -86,13 +94,11 @@
 
     for(let i=0; i<8; i++) { grid.innerHTML += `<div class="slot" id="slot${i}">${emptyHtml}</div>`; }
 
-    // REMOTE SÜRGÜ KONTROLLERİ
     socket.on('apply_cam_settings', (data) => {
         $('#host-cam').css({ 'width': data.w+'px', 'height': data.h+'px', 'left': data.x+'px', 'top': data.y+'px' });
         $('#guest-grid').css({ 
             'left': (parseInt(data.x) + parseInt(data.w) + 5) + 'px', 
-            'top': data.y + 'px', 
-            'height': data.h + 'px' 
+            'top': data.y + 'px', 'height': data.h + 'px' 
         });
     });
 
