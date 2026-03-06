@@ -2,129 +2,74 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orender Remote Control</title>
+    <title>Orender Pro - Remote</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        :root { --bg: #0d0f14; --card: #16181d; --accent: #3498db; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 10px; margin: 0; }
-        .top-nav { display: flex; gap: 5px; margin-bottom: 15px; }
-        .nav-btn { background: #24272e; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 11px; }
-        .active-edit { background: #f39c12 !important; color: #000 !important; }
-        
-        /* Edit Cam Paneli */
-        .remote-group { background: #252833; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
-        .group-title { font-size: 13px; font-weight: bold; margin-bottom: 12px; color: var(--accent); display: flex; justify-content: space-between; }
-        .slider-row { margin-bottom: 10px; }
-        .slider-row label { display: block; font-size: 10px; color: #aaa; margin-bottom: 4px; }
-        .slider-inner { display: flex; align-items: center; gap: 10px; }
-        input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; }
-        .val-box { background: #111; padding: 2px 6px; border-radius: 4px; font-size: 10px; min-width: 25px; text-align: center; border: 1px solid #444; }
-
-        .slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .slot-box { background: var(--card); border: 1px solid #333; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; justify-content: center; }
-        .btn-add { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #444; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .user-info { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid var(--accent); }
-        .action-row { display: flex; gap: 5px; }
-        .btn-small { flex: 1; padding: 8px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; font-size: 11px; }
-        .btn-lion { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; margin-top: 8px; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; }
+        body { background: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+        .slot-btn { padding: 15px; background: #333; border: 2px solid #555; cursor: pointer; text-align: center; border-radius: 8px; }
+        .slot-btn.active { border-color: #3498db; background: #2c3e50; }
+        .controls { margin-top: 20px; background: #222; padding: 20px; border-radius: 8px; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; margin: 5px; }
+        .btn-blue { background: #3498db; color: white; }
+        .btn-green { background: #27ae60; color: white; }
+        .btn-orange { background: #f39c12; color: white; }
+        .btn-red { background: #e74c3c; color: white; }
     </style>
 </head>
 <body>
-    <div style="text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 15px; color: var(--accent);">Orender Remote Control</div>
-    
-    <div class="top-nav">
-        <button id="editBtn" class="nav-btn" onclick="toggleEdit()">Edit Move: Off</button>
-    </div>
+    <h2>Orender Remote Control</h2>
+    <div class="grid" id="slot-grid"></div>
 
-    <div class="remote-group">
-        <div class="group-title">Edit Cam <span>⚙️</span></div>
-        <div class="slider-row">
-            <label>Cam width (px)</label>
-            <div class="slider-inner"><input type="range" id="w-range" min="100" max="500" value="200" oninput="sendCamUpdate()"><div class="val-box" id="w-val">200</div></div>
-        </div>
-        <div class="slider-row">
-            <label>Cam height (px)</label>
-            <div class="slider-inner"><input type="range" id="h-range" min="100" max="800" value="440" oninput="sendCamUpdate()"><div class="val-box" id="h-val">440</div></div>
-        </div>
-        <div class="slider-row">
-            <label>Cam offset X (px)</label>
-            <div class="slider-inner"><input type="range" id="x-range" min="0" max="1000" value="15" oninput="sendCamUpdate()"><div class="val-box" id="x-val">15</div></div>
-        </div>
-        <div class="slider-row">
-            <label>Cam offset Y (px)</label>
-            <div class="slider-inner"><input type="range" id="y-range" min="0" max="1000" value="40" oninput="sendCamUpdate()"><div class="val-box" id="y-val">40</div></div>
+    <div class="controls">
+        <h3 id="selected-title">Slot Seçilmedi</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn-blue" onclick="joinUser()">Kullanıcı Oturt</button>
+            <button class="btn-green" onclick="sendSmallGift()">Küçük Hediye (Asimetrik)</button>
+            <button class="btn-orange" onclick="sendLion()">🦁 ASLAN GÖNDER (29.999K)</button>
+            <button class="btn-red" onclick="removeUser()">Slotu Boşalt</button>
         </div>
     </div>
-
-    <div class="slot-grid" id="slotContainer"></div>
 
 <script>
     const socket = io();
-    let isEdit = false;
-    const slots = Array(8).fill(null);
+    let selectedSlot = null;
 
-    function sendCamUpdate() {
-        const settings = {
-            w: document.getElementById('w-range').value,
-            h: document.getElementById('h-range').value,
-            x: document.getElementById('x-range').value,
-            y: document.getElementById('y-range').value
-        };
-        document.getElementById('w-val').innerText = settings.w;
-        document.getElementById('h-val').innerText = settings.h;
-        document.getElementById('x-val').innerText = settings.x;
-        document.getElementById('y-val').innerText = settings.y;
-        socket.emit('update_cam_settings', settings);
+    for(let i=0; i<8; i++) {
+        $('#slot-grid').append(`<div class="slot-btn" id="btn${i}" onclick="selectSlot(${i})">Slot ${i+1}</div>`);
     }
 
-    function toggleEdit() {
-        isEdit = !isEdit;
-        const btn = document.getElementById('editBtn');
-        btn.innerText = `Edit Move: ${isEdit ? 'ON' : 'Off'}`;
-        btn.classList.toggle('active-edit', isEdit);
-        socket.emit('toggle_edit', { status: isEdit });
+    function selectSlot(i) {
+        selectedSlot = i;
+        $('.slot-btn').removeClass('active');
+        $(`#btn${i}`).addClass('active');
+        $('#selected-title').text(`Slot ${i+1} Seçildi`);
     }
 
-    function render() {
-        const container = document.getElementById('slotContainer');
-        container.innerHTML = '';
-        slots.forEach((u, i) => {
-            if (!u) {
-                container.innerHTML += `<div class="slot-box"><button class="btn-add" onclick="add(${i})">ADD</button></div>`;
-            } else {
-                container.innerHTML += `
-                    <div class="slot-box" style="border-color: var(--accent);">
-                        <div class="user-info"><img src="${u.avatar}" class="avatar"><div style="font-size:12px;">${u.name}</div></div>
-                        <div class="action-row">
-                            <button class="btn-small" style="background:#333; color:#fff;" onclick="remove(${i})">Kick</button>
-                            <button class="btn-small" style="background:#bd4a00; color:#fff;">Donate</button>
-                        </div>
-                        <div class="btn-lion" onclick="lion(${i})">🦁 Lion Gift</div>
-                    </div>`;
-            }
-        });
+    function joinUser() {
+        if(selectedSlot === null) return alert("Slot seç!");
+        const name = prompt("İsim:");
+        const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
+        socket.emit('execute_visual', { action: 'manage_slot', slot: selectedSlot, name: name, avatar: avatar });
     }
 
-    function add(i) {
-        const n = prompt("Kullanıcı Adı:");
-        if(n) {
-            const a = `https://api.dicebear.com/7.x/avataaars/svg?seed=${n}`;
-            slots[i] = { name: n, avatar: a };
-            socket.emit('execute_visual', { action: 'manage_slot', slot: i, name: n, avatar: a });
-            render();
-        }
+    function sendSmallGift() {
+        if(selectedSlot === null) return alert("Slot seç!");
+        const values = [1, 16, 4, 3, 5, 7];
+        const randomVal = values[Math.floor(Math.random() * values.length)];
+        socket.emit('execute_visual', { action: 'gift_trigger', slot: selectedSlot, gift_type: 'small', value: randomVal });
     }
 
-    function remove(i) {
-        slots[i] = null;
-        socket.emit('execute_visual', { action: 'manage_slot', slot: i, name: null });
-        render();
+    function sendLion() {
+        if(selectedSlot === null) return alert("Slot seç!");
+        socket.emit('execute_visual', { action: 'gift_trigger', slot: selectedSlot, gift_type: 'lion' });
     }
 
-    function lion(i) { socket.emit('execute_visual', { action: 'lion_trigger', slot: i }); }
-    render();
+    function removeUser() {
+        if(selectedSlot === null) return alert("Slot seç!");
+        socket.emit('execute_visual', { action: 'manage_slot', slot: selectedSlot, name: null });
+    }
 </script>
 </body>
 </html>
