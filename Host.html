@@ -51,17 +51,15 @@
                     slotData[data.slot].name = data.name;
                     slotData[data.slot].score = 0;
                     
-                    // RESİM ÇÖZÜMÜ: Google'ın resim proxy servisini kullanarak TikTok engelini aşıyoruz
-                    let finalAvatar = data.avatar;
-                    if(finalAvatar && finalAvatar.includes("tiktok")) {
-                        finalAvatar = `https://images.weserv.nl/?url=${encodeURIComponent(finalAvatar)}`;
-                    } else if (!finalAvatar) {
-                        finalAvatar = "https://www.gravatar.com/avatar/0?d=mp";
+                    // RESİM DÜZELTME: TikTok linkini proxy üzerinden geçirme
+                    let avatarUrl = data.avatar || "https://www.gravatar.com/avatar/0?d=mp";
+                    if(avatarUrl.includes("tiktokcdn.com")) {
+                        avatarUrl = `https://images.weserv.nl/?url=${encodeURIComponent(avatarUrl)}&n=-1`;
                     }
 
                     el.html(`
                         <div class="slot-score"><div class="diamond-icon"></div><span class="score-val" id="score-${data.slot}">0</span></div>
-                        <img src="${finalAvatar}" class="guest-avatar" onerror="this.src='https://www.gravatar.com/avatar/0?d=mp'">
+                        <img src="${avatarUrl}" class="guest-avatar" onerror="this.src='https://www.gravatar.com/avatar/0?d=mp'">
                         <div class="info-pill"><span class="guest-name">${data.name}</span></div>
                     `);
                 } else {
@@ -72,12 +70,12 @@
             }
 
             if(data.action === 'gift_trigger' && slotData[data.slot].name) {
-                // PUAN ÇÖZÜMÜ: Animasyonu kaldırdık, direkt topluyoruz
-                let target = data.gift_type === 'lion' ? 29999 : (slotData[data.slot].score + data.value);
-                slotData[data.slot].score = target;
+                // PUAN DÜZELTME: Üzerine ekleme yapıyoruz (30k + 30k = 60k)
+                let giftValue = data.gift_type === 'lion' ? 29999 : parseInt(data.value);
+                slotData[data.slot].score += giftValue;
                 
-                // Sayıyı formatla ve direkt ekrana bas
-                const formatted = target >= 1000 ? (target/1000).toFixed(1) + 'K' : target;
+                let currentScore = slotData[data.slot].score;
+                const formatted = currentScore >= 1000 ? (currentScore/1000).toFixed(1) + 'K' : currentScore;
                 $(`#score-${data.slot}`).text(formatted);
             }
         });
