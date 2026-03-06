@@ -2,13 +2,10 @@ import eventlet
 eventlet.monkey_patch(all=True)
 
 import os
-from flask import Flask, send_from_directory
+from flask import Flask, Response
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from TikTokLive import TikTokLiveClient
-
-# Ana dizini belirle
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 CORS(app)
@@ -16,15 +13,25 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 client = TikTokLiveClient(unique_id="@mylevelupo")
 
+# Dosyayı manuel okuyan yardımcı fonksiyon
+def get_file_content(filename):
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"Dosya okuma hatasi: {str(e)}"
+
 @app.route('/')
 def index():
-    # GitHub'daki büyük harfli isme göre güncellendi
-    return send_from_directory(BASE_DIR, 'Host.html')
+    # Host.html dosyasını direkt oku ve gönder
+    content = get_file_content("Host.html")
+    return Response(content, mimetype='text/html')
 
 @app.route('/remote')
 def remote_page():
-    # GitHub'da dosya adın 'Remote.html' olduğu için tam eşleşme sağladık
-    return send_from_directory(BASE_DIR, 'Remote.html')
+    # Remote.html dosyasını direkt oku ve gönder
+    content = get_file_content("Remote.html")
+    return Response(content, mimetype='text/html')
 
 @socketio.on('execute_visual')
 def handle_visual(data):
