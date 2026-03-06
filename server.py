@@ -2,12 +2,15 @@ import eventlet
 eventlet.monkey_patch(all=True)
 
 import os
-from flask import Flask, render_template
+from flask import Flask, send_from_directory
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from TikTokLive import TikTokLiveClient
 
-app = Flask(__name__) # Flask otomatik olarak 'templates' klasörüne bakar
+# Ana dizini belirle
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
@@ -15,11 +18,13 @@ client = TikTokLiveClient(unique_id="@mylevelupo")
 
 @app.route('/')
 def index():
-    return render_template('Host.html')
+    # GitHub'daki büyük harfli isme göre güncellendi
+    return send_from_directory(BASE_DIR, 'Host.html')
 
 @app.route('/remote')
 def remote_page():
-    return render_template('Remote.html')
+    # GitHub'da dosya adın 'Remote.html' olduğu için tam eşleşme sağladık
+    return send_from_directory(BASE_DIR, 'Remote.html')
 
 @socketio.on('execute_visual')
 def handle_visual(data):
