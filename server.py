@@ -6,14 +6,11 @@ from flask import Flask, Response
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from TikTokLive import TikTokLiveClient
-from TikTokLive.events import ConnectEvent
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
-
-# Yayınına bağlanacak ana client
-tiktok_client = TikTokLiveClient(unique_id="@mylevelupo")
+# En uyumlu socket ayarları
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=True, engineio_logger=True)
 
 def get_file_content(filename):
     try:
@@ -32,36 +29,28 @@ def remote_page():
 
 @socketio.on('execute_visual')
 def handle_visual(data):
+    # Loglarda bu yazıyı görmeliyiz!
+    print(f"!!! KOMUT GELDI: {data}")
+    
     if data.get('action') == 'manage_slot' and data.get('username'):
         target = data.get('username').strip().replace('@', '')
-        print(f"DEBUG: Sorgu Baslatildi -> {target}")
         
+        # TikTok sorgusunu en basit haliyle yapıyoruz
         try:
-            # YENİ VERSİYON ÇÖZÜMÜ: fetch_user_info yerine get_user_info dene
-            # Eğer o da olmazsa direkt web_proxy üzerinden çekmeyi dener
-            try:
-                user = tiktok_client.web_proxy.get_user_info(target)
-            except:
-                # Alternatif metod
-                user = tiktok_client.get_user_info(target)
+            # Client'ı sorgu içinde oluşturup hemen kapatmak en garanti yoldur
+            client = TikTokLiveClient(unique_id=f"@{target}")
+            user_info = client.fetch_user_info() 
             
-            data['name'] = user.nickname
-            data['avatar'] = user.avatar_thumb.url_list[0]
-            print(f"DEBUG: {target} basariyla bulundu.")
+            data['name'] = user_info.nickname
+            data['avatar'] = user_info.avatar_thumb.url_list[0]
+            print(f"!!! BULUNDU: {user_info.nickname}")
         except Exception as e:
-            # Hata ne olursa olsun logla ama ekrana manuel ismi bas
-            print(f"DEBUG: TikTok Veri Çekme Hatası: {e}")
+            print(f"!!! TIKTOK HATASI: {e}")
             data['name'] = target
             data['avatar'] = "https://www.gravatar.com/avatar/0?d=mp"
             
     emit('execute_visual', data, broadcast=True)
 
-@tiktok_client.on(ConnectEvent)
-def on_connect(event: ConnectEvent):
-    print("TikTok Yayınına Bağlanıldı!")
-
 if __name__ == '__main__':
-    # TikTok istemcisini ayrı bir thread'de başlat
-    eventlet.spawn(tiktok_client.run)
     port = int(os.environ.get("PORT", 10000))
     socketio.run(app, host='0.0.0.0', port=port)
