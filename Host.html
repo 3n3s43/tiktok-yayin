@@ -6,7 +6,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { margin: 0; background: #000; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         #guest-grid { 
             width: 180px; height: 440px; position: absolute; top: 40px; left: 220px; 
             display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 2px; 
@@ -30,7 +30,10 @@
             border-radius: 15px; padding: 2px 8px; display: flex; align-items: center; height: 19px;
             max-width: 85%; overflow: hidden;
         }
-        .guest-name { font-size: 9px; color: #fff; font-weight: 500; white-space: nowrap; }
+        .guest-name { 
+            font-size: 9px; color: #fff; font-weight: 600; white-space: nowrap;
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+        }
     </style>
 </head>
 <body>
@@ -51,12 +54,11 @@
                     slotData[data.slot].name = data.name;
                     slotData[data.slot].score = 0;
                     
-                    // 🔥 RESİM ÇÖZÜMÜ: Google Proxy (Bypass TikTok)
+                    // RESİM ÇÖZÜMÜ: Google Proxy (TikTok engelini aşar)
                     let originalUrl = data.avatar || "";
-                    let finalAvatar = "https://www.gravatar.com/avatar/0?d=mp"; // Varsayılan
+                    let finalAvatar = "https://www.gravatar.com/avatar/0?d=mp"; 
 
-                    if(originalUrl.includes("http")) {
-                        // Resmi Google'ın "image proxy" servisiyle çekiyoruz
+                    if(originalUrl && originalUrl.includes("http")) {
                         finalAvatar = "https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=" + encodeURIComponent(originalUrl);
                     }
 
@@ -74,6 +76,7 @@
 
             if(data.action === 'gift_trigger' && slotData[data.slot].name) {
                 let giftValue = (data.gift_type === 'lion') ? 29999 : Number(data.value || 0);
+                // Puan toplama garantisi:
                 slotData[data.slot].score = Number(slotData[data.slot].score) + giftValue;
                 
                 let currentTotal = slotData[data.slot].score;
