@@ -33,8 +33,7 @@
     <h2>Koltuk Seçimi</h2>
     <div id="alert-box"></div>
 
-    <div class="grid" id="slot-grid">
-        </div>
+    <div class="grid" id="slot-grid"></div>
 
     <div id="control-panel" class="controls">
         <h3 id="selected-title">Koltuk Seçiniz</h3>
@@ -49,7 +48,6 @@
         const socket = io();
         let selectedSlot = null;
 
-        // 8 Koltuğu oluştur
         const grid = document.getElementById('slot-grid');
         for(let i=0; i<8; i++) {
             let btn = document.createElement('button');
@@ -71,7 +69,6 @@
         function manageUser() {
             let targetName = prompt("TikTok kullanıcı adını yazın (@ olmadan):");
             if (targetName) {
-                // Sunucuya 'username' anahtarı ile gönderiyoruz
                 socket.emit('execute_visual', {
                     action: 'manage_slot',
                     slot: selectedSlot,
@@ -81,7 +78,6 @@
         }
 
         function removeUser() {
-            // İsmi null göndererek koltuğu boşaltıyoruz
             socket.emit('execute_visual', {
                 action: 'manage_slot',
                 slot: selectedSlot,
@@ -98,7 +94,6 @@
             });
         }
 
-        // TikTok'tan gelen hediyeleri göster
         socket.on('tiktok_gift_alert', (data) => {
             const box = document.getElementById('alert-box');
             box.innerText = `🎁 HEDİYE: @${data.user} -> ${data.gift_name}`;
