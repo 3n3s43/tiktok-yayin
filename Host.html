@@ -24,9 +24,9 @@
             clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
         }
         .score-val { font-size: 10px; color: #fff; font-weight: 600; }
-        .guest-avatar { width: 58px; height: 58px; border-radius: 50%; border: 1.5px solid #333; object-fit: cover; background: #1a1a1a; }
+        .guest-avatar { width: 58px; height: 58px; border-radius: 50%; border: 1.5px solid #333; object-fit: cover; background: #1a1a1a; display: block; }
         .info-pill {
-            position: absolute; bottom: 8px; left: 6px; background: rgba(0,0,0,0.5); 
+            position: absolute; bottom: 8px; left: 6px; background: rgba(0,0,0,0.7); 
             border-radius: 15px; padding: 2px 8px; display: flex; align-items: center; height: 19px;
             max-width: 85%; overflow: hidden;
         }
@@ -37,6 +37,7 @@
     <div id="guest-grid"></div>
     <script>
         const socket = io();
+        // Puanları hafızada tutmak için dizi
         let slotData = Array(8).fill(null).map(() => ({ score: 0, name: null }));
 
         for(let i=0; i<8; i++) {
@@ -51,10 +52,12 @@
                     slotData[data.slot].name = data.name;
                     slotData[data.slot].score = 0;
                     
-                    // RESİM DÜZELTME: TikTok linkini proxy üzerinden geçirme
+                    // 🔥 YENİ RESİM ÇÖZÜMÜ: DuckDuckGo Proxy (Weserv yerine)
                     let avatarUrl = data.avatar || "https://www.gravatar.com/avatar/0?d=mp";
-                    if(avatarUrl.includes("tiktokcdn.com")) {
-                        avatarUrl = `https://images.weserv.nl/?url=${encodeURIComponent(avatarUrl)}&n=-1`;
+                    
+                    // TikTok sunucusu algılanırsa proxy'ye sok
+                    if(avatarUrl.includes("tiktokcdn.com") || avatarUrl.includes("tiktok")) {
+                        avatarUrl = `https://external-content.duckduckgo.com/iu/?u=${encodeURIComponent(avatarUrl)}&f=1&nofb=1`;
                     }
 
                     el.html(`
@@ -70,13 +73,17 @@
             }
 
             if(data.action === 'gift_trigger' && slotData[data.slot].name) {
-                // PUAN DÜZELTME: Üzerine ekleme yapıyoruz (30k + 30k = 60k)
-                let giftValue = data.gift_type === 'lion' ? 29999 : parseInt(data.value);
-                slotData[data.slot].score += giftValue;
+                // 🔥 PUAN TOPLAMA: Aslan (29999) veya normal değer
+                let giftValue = (data.gift_type === 'lion') ? 29999 : parseInt(data.value || 0);
                 
-                let currentScore = slotData[data.slot].score;
-                const formatted = currentScore >= 1000 ? (currentScore/1000).toFixed(1) + 'K' : currentScore;
+                // Mevcut puanın üzerine ekle
+                slotData[data.slot].score = Number(slotData[data.slot].score) + giftValue;
+                
+                let currentTotal = slotData[data.slot].score;
+                const formatted = currentTotal >= 1000 ? (currentTotal/1000).toFixed(1) + 'K' : currentTotal;
+                
                 $(`#score-${data.slot}`).text(formatted);
+                console.log(`Koltuk ${data.slot} Yeni Puan: ${currentTotal}`);
             }
         });
     </script>
