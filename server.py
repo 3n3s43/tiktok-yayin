@@ -6,8 +6,6 @@ from flask import Flask, Response
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from TikTokLive import TikTokLiveClient
-# Yeni versiyonlarda bilgi çekmek için bu alt kütüphane gerekebilir
-from TikTokLive.types.errors import UserNotFound 
 
 app = Flask(__name__)
 CORS(app)
@@ -32,28 +30,23 @@ def remote_page():
 def handle_visual(data):
     if data.get('action') == 'manage_slot' and data.get('username'):
         target_user = data.get('username').strip().replace('@', '')
-        print(f"DEBUG: TikTok Sorgusu Baslatildi: {target_user}")
+        print(f"DEBUG: TikTok Sorgusu -> {target_user}")
         
         try:
-            # Hata veren 'fetch_user_info' yerine en güncel arama metodunu kullanıyoruz
+            # En temel TikTok istemcisi ile bilgi çekme
             search_client = TikTokLiveClient(unique_id=f"@{target_user}")
-            user_data = search_client.get_user_info() # Bazı versiyonlarda 'get_user_info' olur
+            # Çoğu versiyonda çalışan en garanti metod
+            user_data = search_client.fetch_user_info()
             
             data['name'] = user_data.nickname
             data['avatar'] = user_data.avatar_thumb.url_list[0]
-            print(f"DEBUG: {target_user} bulundu!")
+            print(f"DEBUG: {target_user} Basariyla Bulundu.")
             
         except Exception as e:
-            # Eğer 'get_user_info' da hata verirse en garanti yöntem:
-            print(f"DEBUG: Birinci yontem basarisiz, alternatif deneniyor: {e}")
-            try:
-                # Alternatif: Bilgileri doğrudan client üzerinden çekmeyi dene
-                info = search_client.fetch_user_info() 
-                data['name'] = info.nickname
-                data['avatar'] = info.avatar_thumb.url_list[0]
-            except:
-                data['name'] = target_user
-                data['avatar'] = "https://www.gravatar.com/avatar/0?d=mp"
+            # Hata ne olursa olsun sistemin çökmesini engelle, yazılan ismi bas
+            print(f"DEBUG: Sorgu Hatasi: {e}")
+            data['name'] = target_user
+            data['avatar'] = "https://www.gravatar.com/avatar/0?d=mp"
     
     emit('execute_visual', data, broadcast=True)
 
