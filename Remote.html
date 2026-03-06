@@ -11,15 +11,26 @@
         .slot-btn { padding: 15px; background: #333; border: 2px solid #555; cursor: pointer; text-align: center; border-radius: 8px; }
         .slot-btn.active { border-color: #3498db; background: #2c3e50; }
         .controls { margin-top: 20px; background: #222; padding: 20px; border-radius: 8px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; margin: 5px; }
+        
+        /* YENİ: Hediye Bildirim Alanı */
+        #gift-notif { 
+            margin-bottom: 20px; padding: 15px; background: #2ecc71; color: #fff; 
+            border-radius: 8px; display: none; font-weight: bold; border-left: 5px solid #27ae60;
+        }
+
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; margin: 5px; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
         .btn-blue { background: #3498db; color: white; }
         .btn-green { background: #27ae60; color: white; }
-        .btn-orange { background: #f39c12; color: white; }
+        .btn-orange { background: #f39c12; color: white; font-size: 16px; } /* Aslan butonu belirgin */
         .btn-red { background: #e74c3c; color: white; }
     </style>
 </head>
 <body>
     <h2>Orender Remote Control</h2>
+
+    <div id="gift-notif"></div>
+
     <div class="grid" id="slot-grid"></div>
 
     <div class="controls">
@@ -36,9 +47,17 @@
     const socket = io();
     let selectedSlot = null;
 
+    // Slot Butonlarını Oluştur
     for(let i=0; i<8; i++) {
         $('#slot-grid').append(`<div class="slot-btn" id="btn${i}" onclick="selectSlot(${i})">Slot ${i+1}</div>`);
     }
+
+    // TİKTOK BİLDİRİMİ YAKALA
+    socket.on('tiktok_gift_alert', (data) => {
+        const msg = `🎁 YENİ HEDİYE: ${data.user} kişisi ${data.gift_name} (${data.diamonds} Elmas) attı!`;
+        $('#gift-notif').text(msg).fadeIn().delay(5000).fadeOut();
+        console.log("TikTok Verisi:", data);
+    });
 
     function selectSlot(i) {
         selectedSlot = i;
@@ -50,25 +69,30 @@
     function joinUser() {
         if(selectedSlot === null) return alert("Slot seç!");
         const name = prompt("İsim:");
+        if(!name) return;
         const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
         socket.emit('execute_visual', { action: 'manage_slot', slot: selectedSlot, name: name, avatar: avatar });
     }
 
     function sendSmallGift() {
-        if(selectedSlot === null) return alert("Slot seç!");
+        if(selectedSlot === null) return alert("Hangi misafire atacaksın? Slot seç!");
+        // Senin istediğin asimetrik artış rakamları
         const values = [1, 16, 4, 3, 5, 7];
         const randomVal = values[Math.floor(Math.random() * values.length)];
         socket.emit('execute_visual', { action: 'gift_trigger', slot: selectedSlot, gift_type: 'small', value: randomVal });
     }
 
     function sendLion() {
-        if(selectedSlot === null) return alert("Slot seç!");
+        if(selectedSlot === null) return alert("Hangi misafire ASLAN atacaksın? Slot seç!");
+        // Direkt 29.999K ekler
         socket.emit('execute_visual', { action: 'gift_trigger', slot: selectedSlot, gift_type: 'lion' });
     }
 
     function removeUser() {
         if(selectedSlot === null) return alert("Slot seç!");
-        socket.emit('execute_visual', { action: 'manage_slot', slot: selectedSlot, name: null });
+        if(confirm("Bu misafiri çıkartmak istediğine emin misin?")) {
+            socket.emit('execute_visual', { action: 'manage_slot', slot: selectedSlot, name: null });
+        }
     }
 </script>
 </body>
