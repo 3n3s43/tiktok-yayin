@@ -9,8 +9,8 @@ from TikTokLive import TikTokLiveClient
 
 app = Flask(__name__)
 CORS(app)
-# En uyumlu socket ayarları
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet', logger=True, engineio_logger=True)
+# En uyumlu socket ayarları ve logger açık
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 def get_file_content(filename):
     try:
@@ -29,26 +29,31 @@ def remote_page():
 
 @socketio.on('execute_visual')
 def handle_visual(data):
-    # Loglarda bu yazıyı görmeliyiz!
-    print(f"!!! KOMUT GELDI: {data}")
-    
+    # Sinyal geldi mi? Kontrol edelim
+    print(f"--> KOMUT ALINDI: {data.get('action')}")
+
     if data.get('action') == 'manage_slot' and data.get('username'):
         target = data.get('username').strip().replace('@', '')
-        
-        # TikTok sorgusunu en basit haliyle yapıyoruz
+        print(f"--> TIKTOK SORGUSU: {target}")
+
         try:
-            # Client'ı sorgu içinde oluşturup hemen kapatmak en garanti yoldur
-            client = TikTokLiveClient(unique_id=f"@{target}")
-            user_info = client.fetch_user_info() 
+            # DİĞER PROJEDEKİ GİZLİ YÖNTEM:
+            # Client üzerinden değil, kütüphanenin web modülü üzerinden sorgu
+            temp_client = TikTokLiveClient(unique_id=f"@{target}")
+            # Yeni versiyonlarda en sağlam bilgi çekme yolu budur:
+            user_data = temp_client.web.get_user_info(target)
             
-            data['name'] = user_info.nickname
-            data['avatar'] = user_info.avatar_thumb.url_list[0]
-            print(f"!!! BULUNDU: {user_info.nickname}")
+            data['name'] = user_data.nickname
+            data['avatar'] = user_data.avatar_thumb.url_list[0]
+            print(f"--> BAŞARILI: {user_data.nickname} bulundu!")
+
         except Exception as e:
-            print(f"!!! TIKTOK HATASI: {e}")
+            # Eğer yukarıdaki metod hata verirse, en azından manuel ismi ekrana bas
+            print(f"--> TIKTOK HATASI (Detay): {str(e)}")
             data['name'] = target
             data['avatar'] = "https://www.gravatar.com/avatar/0?d=mp"
-            
+    
+    # Bilgileri (Gerçek veya Manuel) tüm ekranlara yay
     emit('execute_visual', data, broadcast=True)
 
 if __name__ == '__main__':

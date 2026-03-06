@@ -3,57 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mylevelupo - Kumanda</title>
+    <title>Mylevelupo - Profesyonel Kumanda</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; margin: 20px auto; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; text-align: center; padding: 20px; margin: 0; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 400px; margin: 20px auto; }
         .slot-btn { 
-            padding: 20px; background: #1e1e1e; border: 2px solid #333; border-radius: 10px; 
-            color: white; cursor: pointer; transition: 0.3s; font-weight: bold;
+            padding: 25px 10px; background: #1a1a1a; border: 2px solid #333; border-radius: 12px; 
+            color: #aaa; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 14px;
         }
-        .slot-btn.active { border-color: #00f2ff; background: #1a2a2d; box-shadow: 0 0 10px #00f2ff; }
-        .controls { display: none; margin-top: 20px; background: #1e1e1e; padding: 20px; border-radius: 15px; }
+        .slot-btn.active { border-color: #00f2ff; background: #002b2e; color: white; box-shadow: 0 0 15px rgba(0,242,255,0.3); }
+        
+        .controls { display: none; margin-top: 20px; background: #1a1a1a; padding: 25px; border-radius: 20px; border-top: 3px solid #00f2ff; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
         .btn { 
-            width: 90%; padding: 15px; margin: 10px; border: none; border-radius: 8px; 
-            font-weight: bold; cursor: pointer; font-size: 16px;
+            width: 100%; padding: 18px; margin: 8px 0; border: none; border-radius: 10px; 
+            font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s;
         }
+        .btn:active { transform: scale(0.97); }
+        
         .btn-green { background: #2ecc71; color: white; }
         .btn-red { background: #e74c3c; color: white; }
         .btn-gift { background: #f1c40f; color: #000; }
         .btn-lion { background: #e67e22; color: white; border: 2px solid #ffcc00; }
-        #alert-box { 
-            background: #27ae60; color: white; padding: 10px; border-radius: 5px; 
-            margin-bottom: 20px; display: none; font-size: 14px;
+        
+        #status-bar { 
+            background: #222; color: #00f2ff; padding: 8px; border-radius: 5px; 
+            margin-bottom: 15px; font-size: 12px; font-family: monospace;
         }
     </style>
 </head>
 <body>
 
-    <h2>Koltuk Seçimi</h2>
-    <div id="alert-box"></div>
+    <h2>Koltuk Kontrol Paneli</h2>
+    <div id="status-bar">Sistem Hazır: Bağlantı Bekleniyor...</div>
 
     <div class="grid" id="slot-grid"></div>
 
     <div id="control-panel" class="controls">
-        <h3 id="selected-title">Koltuk Seçiniz</h3>
+        <h3 id="selected-title" style="margin-top:0; color:#00f2ff;">Koltuk Seçiniz</h3>
+        
         <button class="btn btn-green" onclick="manageUser()">👤 TikTok'tan Bul & Oturt</button>
         <button class="btn btn-red" onclick="removeUser()">❌ Koltuğu Boşalt</button>
-        <hr style="border: 0.5px solid #333; margin: 20px 0;">
+        
+        <div style="margin: 20px 0; border-bottom: 1px solid #333;"></div>
+        
         <button class="btn btn-gift" onclick="sendGift(100)">💎 +100 Puan Ver</button>
         <button class="btn btn-lion" onclick="sendGift('lion')">🦁 ASLAN GÖNDER (29.9K)</button>
     </div>
 
     <script>
+        // Sunucuya bağlan
         const socket = io();
         let selectedSlot = null;
 
+        // Bağlantı durumunu takip et
+        socket.on('connect', () => {
+            document.getElementById('status-bar').innerText = "BAĞLANDI: Sunucu Aktif ✅";
+            document.getElementById('status-bar').style.color = "#2ecc71";
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('status-bar').innerText = "BAĞLANTI KOPTU ❌";
+            document.getElementById('status-bar').style.color = "#e74c3c";
+        });
+
+        // Koltukları oluştur
         const grid = document.getElementById('slot-grid');
         for(let i=0; i<8; i++) {
             let btn = document.createElement('button');
             btn.className = 'slot-btn';
             btn.id = `btn-${i}`;
-            btn.innerText = `${i+1}. Koltuk`;
+            btn.innerText = `${i+1}. KOLTUK`;
             btn.onclick = () => selectSlot(i);
             grid.appendChild(btn);
         }
@@ -67,8 +88,13 @@
         }
 
         function manageUser() {
+            if (selectedSlot === null) return;
             let targetName = prompt("TikTok kullanıcı adını yazın (@ olmadan):");
+            
             if (targetName) {
+                targetName = targetName.trim().replace('@', '');
+                console.log("Sunucuya 'manage_slot' gönderiliyor:", targetName);
+                
                 socket.emit('execute_visual', {
                     action: 'manage_slot',
                     slot: selectedSlot,
@@ -78,14 +104,20 @@
         }
 
         function removeUser() {
-            socket.emit('execute_visual', {
-                action: 'manage_slot',
-                slot: selectedSlot,
-                name: null
-            });
+            if (selectedSlot === null) return;
+            if (confirm("Koltuk boşaltılsın mı?")) {
+                socket.emit('execute_visual', {
+                    action: 'manage_slot',
+                    slot: selectedSlot,
+                    username: null,
+                    name: "BOŞ",
+                    avatar: "https://www.gravatar.com/avatar/0?d=mp"
+                });
+            }
         }
 
         function sendGift(val) {
+            if (selectedSlot === null) return;
             socket.emit('execute_visual', {
                 action: 'gift_trigger',
                 slot: selectedSlot,
@@ -93,13 +125,6 @@
                 value: val === 'lion' ? 29999 : val
             });
         }
-
-        socket.on('tiktok_gift_alert', (data) => {
-            const box = document.getElementById('alert-box');
-            box.innerText = `🎁 HEDİYE: @${data.user} -> ${data.gift_name}`;
-            box.style.display = 'block';
-            setTimeout(() => { box.style.display = 'none'; }, 8000);
-        });
     </script>
 </body>
 </html>
