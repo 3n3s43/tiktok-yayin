@@ -6,13 +6,13 @@ from flask import Flask, Response
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from TikTokLive import TikTokLiveClient
-# Yeni versiyonda olayları bu şekilde import ediyoruz
 from TikTokLive.events import ConnectEvent
 
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
+# Yayınına bağlanacak ana client
 tiktok_client = TikTokLiveClient(unique_id="@mylevelupo")
 
 def get_file_content(filename):
@@ -37,26 +37,31 @@ def handle_visual(data):
         print(f"DEBUG: Sorgu Baslatildi -> {target}")
         
         try:
-            # Yeni versiyonlarda fetch_user_info parametresiz de calisabilir
-            # En saglam veri cekme yontemi budur
-            user = tiktok_client.fetch_user_info(target)
+            # YENİ VERSİYON ÇÖZÜMÜ: fetch_user_info yerine get_user_info dene
+            # Eğer o da olmazsa direkt web_proxy üzerinden çekmeyi dener
+            try:
+                user = tiktok_client.web_proxy.get_user_info(target)
+            except:
+                # Alternatif metod
+                user = tiktok_client.get_user_info(target)
+            
             data['name'] = user.nickname
             data['avatar'] = user.avatar_thumb.url_list[0]
-            print(f"DEBUG: {target} basariyla oturtuldu.")
+            print(f"DEBUG: {target} basariyla bulundu.")
         except Exception as e:
-            print(f"DEBUG: Veri cekme hatasi: {e}")
+            # Hata ne olursa olsun logla ama ekrana manuel ismi bas
+            print(f"DEBUG: TikTok Veri Çekme Hatası: {e}")
             data['name'] = target
             data['avatar'] = "https://www.gravatar.com/avatar/0?d=mp"
             
     emit('execute_visual', data, broadcast=True)
 
-# HATA VEREN KISIM BURAYDI, DUZELTILDI:
 @tiktok_client.on(ConnectEvent)
 def on_connect(event: ConnectEvent):
-    print("TikTok Yayınına Başarıyla Bağlanıldı!")
+    print("TikTok Yayınına Bağlanıldı!")
 
 if __name__ == '__main__':
-    # TikTok istemcisini arka planda baslat
+    # TikTok istemcisini ayrı bir thread'de başlat
     eventlet.spawn(tiktok_client.run)
     port = int(os.environ.get("PORT", 10000))
     socketio.run(app, host='0.0.0.0', port=port)
