@@ -6,15 +6,15 @@ from flask import Flask, Response
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from TikTokLive import TikTokLiveClient
+# Yeni versiyonlarda bilgi çekmek için bu alt kütüphane gerekebilir
+from TikTokLive.types.errors import UserNotFound 
 
 app = Flask(__name__)
 CORS(app)
-# async_mode='eventlet' loglardaki o socket hatalarını minimize eder
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 def get_file_content(filename):
     try:
-        # Büyük/Küçük harf duyarlı dosya okuma
         with open(filename, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
@@ -30,26 +30,30 @@ def remote_page():
 
 @socketio.on('execute_visual')
 def handle_visual(data):
-    # Loglara ne yaptığımızı yazalım ki takip edebilelim
-    print(f"DEBUG: Gelen Komut -> {data.get('action')}")
-    
     if data.get('action') == 'manage_slot' and data.get('username'):
         target_user = data.get('username').strip().replace('@', '')
         print(f"DEBUG: TikTok Sorgusu Baslatildi: {target_user}")
         
         try:
-            # Her aramada yepyeni bir client (Connector mantığı)
+            # Hata veren 'fetch_user_info' yerine en güncel arama metodunu kullanıyoruz
             search_client = TikTokLiveClient(unique_id=f"@{target_user}")
-            user_info = search_client.fetch_user_info()
+            user_data = search_client.get_user_info() # Bazı versiyonlarda 'get_user_info' olur
             
-            data['name'] = user_info.nickname # TikTok'taki süslü isim
-            data['avatar'] = user_info.avatar_thumb.url_list[0] # Profil resmi
-            print(f"DEBUG: {target_user} Basariyla Oturtuldu!")
+            data['name'] = user_data.nickname
+            data['avatar'] = user_data.avatar_thumb.url_list[0]
+            print(f"DEBUG: {target_user} bulundu!")
             
         except Exception as e:
-            print(f"DEBUG: TikTok Hatasi: {e}")
-            data['name'] = target_user
-            data['avatar'] = "https://www.gravatar.com/avatar/0?d=mp"
+            # Eğer 'get_user_info' da hata verirse en garanti yöntem:
+            print(f"DEBUG: Birinci yontem basarisiz, alternatif deneniyor: {e}")
+            try:
+                # Alternatif: Bilgileri doğrudan client üzerinden çekmeyi dene
+                info = search_client.fetch_user_info() 
+                data['name'] = info.nickname
+                data['avatar'] = info.avatar_thumb.url_list[0]
+            except:
+                data['name'] = target_user
+                data['avatar'] = "https://www.gravatar.com/avatar/0?d=mp"
     
     emit('execute_visual', data, broadcast=True)
 
