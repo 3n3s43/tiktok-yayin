@@ -1,68 +1,91 @@
-<style>
-    /* GENEL TASARIM AYARLARI */
-    body { margin: 0; background: #000; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: white; }
-    
-    #guest-grid { 
-        width: 180px; height: 440px; position: absolute; top: 40px; left: 220px; 
-        display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 2px; 
-    }
-    
-    .slot { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    
-    /* BOŞ SLOT GÖRÜNÜMÜ */
-    .plus-icon { color: #888; font-size: 32px; font-weight: 200; margin-bottom: 2px; }
-    .req-text { color: #888; font-size: 11px; font-weight: 400; }
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { margin: 0; background: #000; font-family: sans-serif; overflow: hidden; }
+        #guest-grid { 
+            width: 180px; height: 440px; position: absolute; top: 40px; left: 220px; 
+            display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 2px; 
+        }
+        .slot { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        
+        /* BOŞ SLOT */
+        .plus-icon { color: #888; font-size: 32px; font-weight: 200; }
+        .req-text { color: #888; font-size: 11px; }
 
-    /* ÜSTTEKİ PUAN ALANI (SİYAH HAP) */
-    .slot-score { 
-        position: absolute; top: 6px; left: 6px; 
-        background: rgba(0, 0, 0, 0.6); border-radius: 20px; 
-        padding: 2px 8px 2px 2px; display: flex; align-items: center; gap: 5px; 
-        z-index: 5;
-    }
+        /* PUAN HAPI */
+        .slot-score { 
+            position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.6); 
+            border-radius: 20px; padding: 2px 8px 2px 2px; display: flex; align-items: center; gap: 5px; z-index: 5;
+        }
+        .diamond-icon {
+            width: 15px; height: 15px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+        .diamond-icon::after {
+            content: ''; width: 9px; height: 9px; background: #00f2ff;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        }
+        .score-val { font-size: 10px; color: #fff; font-weight: 600; }
 
-    /* KRİSTAL YILDIZ BADGE */
-    .diamond-icon {
-        width: 15px; height: 15px; background: #fff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 0 6px rgba(255, 255, 255, 0.8); /* Dıştaki parlama halkası */
-    }
-    .diamond-icon::after {
-        content: ''; width: 9px; height: 9px; background: #00f2ff;
-        clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-    }
+        /* MİSAFİR BİLGİSİ */
+        .guest-avatar { width: 58px; height: 58px; border-radius: 50%; border: 1px solid #222; object-fit: cover; }
+        .info-pill {
+            position: absolute; bottom: 8px; left: 6px; background: rgba(0,0,0,0.5); 
+            border-radius: 15px; padding: 2px 8px; display: flex; align-items: center; height: 19px;
+        }
+        .guest-name { font-size: 9px; color: #fff; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div id="guest-grid"></div>
 
-    /* İNCE YAZI TİPİ */
-    .slot-score span { 
-        font-size: 10.5px; font-weight: 500; color: #fff; 
-        letter-spacing: 0.2px; 
-    }
+    <script>
+        const socket = io();
+        let slotData = Array(8).fill(null).map(() => ({ score: 0, name: null }));
 
-    /* PROFİL FOTOĞRAFI */
-    .guest-avatar { width: 58px; height: 58px; border-radius: 50%; object-fit: cover; border: 1px solid #222; }
+        // Grid Başlat
+        for(let i=0; i<8; i++) {
+            $('#guest-grid').append(`<div class="slot" id="slot-${i}"><div class="plus-icon">+</div><div class="req-text">Request</div></div>`);
+        }
 
-    /* ALTTAKİ İSİM VE ARTI BUTONU */
-    .info-pill {
-        position: absolute; bottom: 8px; left: 6px; 
-        background: rgba(0, 0, 0, 0.5); border-radius: 15px; 
-        padding: 2px 2px 2px 8px; display: flex; align-items: center; gap: 4px;
-        max-width: 65px; height: 19px;
-    }
-    .guest-name { 
-        font-size: 9px; font-weight: 500; color: #fff; 
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: none;
-    }
-    .mini-plus-circle { 
-        width: 15px; height: 15px; background: rgba(255, 255, 255, 0.2); 
-        border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-    }
-    .mini-plus { font-size: 10px; font-weight: bold; color: #fff; line-height: 1; }
+        socket.on('execute_visual', (data) => {
+            const el = $(`#slot-${data.slot}`);
+            
+            if(data.action === 'manage_slot') {
+                if(data.name) {
+                    slotData[data.slot].name = data.name;
+                    slotData[data.slot].score = 0;
+                    el.html(`
+                        <div class="slot-score"><div class="diamond-icon"></div><span class="score-val" id="score-${data.slot}">0</span></div>
+                        <img src="${data.avatar}" class="guest-avatar">
+                        <div class="info-pill"><span class="guest-name">${data.name}</span></div>
+                    `);
+                } else {
+                    el.html(`<div class="plus-icon">+</div><div class="req-text">Request</div>`);
+                }
+            }
 
-    /* MİKROFON BUTONU */
-    .mic-pill { 
-        position: absolute; bottom: 8px; right: 8px; 
-        width: 19px; height: 19px; background: rgba(0, 0, 0, 0.5); 
-        border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-    }
-    .mic-pill svg { width: 11px; height: 11px; fill: #fff; opacity: 0.9; }
-</style>
+            if(data.action === 'gift_trigger') {
+                let target = data.gift_type === 'lion' ? 29999 : (slotData[data.slot].score + data.value);
+                animateValue(data.slot, slotData[data.slot].score, target, 1500);
+                slotData[data.slot].score = target;
+            }
+        });
+
+        function animateValue(slot, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = Math.floor(progress * (end - start) + start);
+                $(`#score-${slot}`).text(current > 999 ? (current/1000).toFixed(1) + 'K' : current);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+    </script>
+</body>
+</html>
