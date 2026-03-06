@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mylevelupo - Profesyonel Kumanda</title>
+    <title>Mylevelupo - Kumanda</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
@@ -13,32 +13,31 @@
             color: white; cursor: pointer; transition: 0.3s; font-weight: bold;
         }
         .slot-btn.active { border-color: #00f2ff; background: #1a2a2d; box-shadow: 0 0 10px #00f2ff; }
-        .controls { display: none; margin-top: 20px; background: #1e1e1e; padding: 20px; border-radius: 15px; border: 1px solid #333; }
+        .controls { display: none; margin-top: 20px; background: #1e1e1e; padding: 20px; border-radius: 15px; }
         .btn { 
             width: 90%; padding: 15px; margin: 10px; border: none; border-radius: 8px; 
-            font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s;
+            font-weight: bold; cursor: pointer; font-size: 16px;
         }
-        .btn:active { transform: scale(0.98); }
         .btn-green { background: #2ecc71; color: white; }
         .btn-red { background: #e74c3c; color: white; }
         .btn-gift { background: #f1c40f; color: #000; }
         .btn-lion { background: #e67e22; color: white; border: 2px solid #ffcc00; }
         #alert-box { 
-            background: #27ae60; color: white; padding: 12px; border-radius: 8px; 
-            margin-bottom: 20px; display: none; font-size: 14px; font-weight: bold;
+            background: #27ae60; color: white; padding: 10px; border-radius: 5px; 
+            margin-bottom: 20px; display: none; font-size: 14px;
         }
     </style>
 </head>
 <body>
 
-    <h2>Koltuk Yönetimi</h2>
+    <h2>Koltuk Seçimi</h2>
     <div id="alert-box"></div>
 
     <div class="grid" id="slot-grid">
         </div>
 
     <div id="control-panel" class="controls">
-        <h3 id="selected-title" style="color: #00f2ff;">Koltuk Seçiniz</h3>
+        <h3 id="selected-title">Koltuk Seçiniz</h3>
         <button class="btn btn-green" onclick="manageUser()">👤 TikTok'tan Bul & Oturt</button>
         <button class="btn btn-red" onclick="removeUser()">❌ Koltuğu Boşalt</button>
         <hr style="border: 0.5px solid #333; margin: 20px 0;">
@@ -56,7 +55,7 @@
             let btn = document.createElement('button');
             btn.className = 'slot-btn';
             btn.id = `btn-${i}`;
-            btn.innerText = `${i+1}. KOLTUK`;
+            btn.innerText = `${i+1}. Koltuk`;
             btn.onclick = () => selectSlot(i);
             grid.appendChild(btn);
         }
@@ -72,7 +71,7 @@
         function manageUser() {
             let targetName = prompt("TikTok kullanıcı adını yazın (@ olmadan):");
             if (targetName) {
-                // 'username' anahtarı server.py'daki TikTok arama fonksiyonunu tetikler
+                // Sunucuya 'username' anahtarı ile gönderiyoruz
                 socket.emit('execute_visual', {
                     action: 'manage_slot',
                     slot: selectedSlot,
@@ -82,7 +81,7 @@
         }
 
         function removeUser() {
-            // Koltuğu temizlemek için name: null gönderilir
+            // İsmi null göndererek koltuğu boşaltıyoruz
             socket.emit('execute_visual', {
                 action: 'manage_slot',
                 slot: selectedSlot,
@@ -99,10 +98,10 @@
             });
         }
 
-        // TikTok'tan gelen hediyeleri takip et
+        // TikTok'tan gelen hediyeleri göster
         socket.on('tiktok_gift_alert', (data) => {
             const box = document.getElementById('alert-box');
-            box.innerText = `🎁 HEDİYE: @${data.user} -> ${data.gift_name} gönderdi!`;
+            box.innerText = `🎁 HEDİYE: @${data.user} -> ${data.gift_name}`;
             box.style.display = 'block';
             setTimeout(() => { box.style.display = 'none'; }, 8000);
         });
