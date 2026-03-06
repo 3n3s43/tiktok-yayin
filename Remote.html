@@ -1,73 +1,61 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mylevelupo - Kumanda</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; margin: 20px auto; }
-        .slot-btn { 
-            padding: 20px; background: #1e1e1e; border: 2px solid #333; border-radius: 10px; 
-            color: white; cursor: pointer; transition: 0.3s;
-        }
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 400px; margin: auto; }
+        .slot-btn { padding: 15px; background: #1e1e1e; border: 2px solid #333; color: white; border-radius: 8px; cursor: pointer; }
         .slot-btn.active { border-color: #00f2ff; background: #1a2a2d; }
-        .controls { display: none; margin-top: 20px; background: #1e1e1e; padding: 20px; border-radius: 15px; }
-        .btn { 
-            width: 80%; padding: 15px; margin: 10px; border: none; border-radius: 8px; 
-            font-weight: bold; cursor: pointer; font-size: 16px;
-        }
+        .controls { display: none; margin-top: 20px; }
+        .btn { width: 80%; padding: 12px; margin: 5px; border-radius: 5px; font-weight: bold; cursor: pointer; border: none; }
         .btn-green { background: #2ecc71; color: white; }
         .btn-red { background: #e74c3c; color: white; }
-        .btn-gift { background: #f1c40f; color: #000; }
-        .btn-lion { background: #e67e22; color: white; border: 2px solid #ffcc00; }
-        #alert-box { 
-            background: #27ae60; color: white; padding: 10px; border-radius: 5px; 
-            margin-bottom: 20px; display: none; font-size: 14px;
-        }
+        .btn-gift { background: #f1c40f; color: black; }
     </style>
 </head>
 <body>
-
-    <h2>Koltuk Seç</h2>
-    <div id="alert-box"></div>
-
-    <div class="grid" id="slot-grid">
-        </div>
+    <h2>Koltuk Seçimi</h2>
+    <div id="alert-box" style="display:none; background:green; padding:10px;"></div>
+    <div class="grid" id="grid"></div>
 
     <div id="control-panel" class="controls">
-        <h3 id="selected-title">Koltuk 1 Seçildi</h3>
+        <h3 id="slot-name">Slot Seç</h3>
         <button class="btn btn-green" onclick="manageUser()">👤 TikTok'tan Bul & Oturt</button>
         <button class="btn btn-red" onclick="removeUser()">❌ Koltuğu Boşalt</button>
-        <hr style="border: 0.5px solid #333; margin: 20px 0;">
-        <button class="btn btn-gift" onclick="sendGift(100)">💎 +100 Puan Ver</button>
-        <button class="btn btn-lion" onclick="sendGift('lion')">🦁 ASLAN GÖNDER</button>
+        <button class="btn btn-gift" onclick="sendGift(100)">💎 +100 Puan</button>
     </div>
 
     <script>
         const socket = io();
         let selectedSlot = null;
 
-        // Koltukları oluştur
-        const grid = document.getElementById('slot-grid');
         for(let i=0; i<8; i++) {
-            let btn = document.createElement('button');
-            btn.className = 'slot-btn';
-            btn.id = `btn-${i}`;
-            btn.innerText = `${i+1}. Koltuk`;
-            btn.onclick = () => selectSlot(i);
-            grid.appendChild(btn);
-        }
-
-        function selectSlot(id) {
-            selectedSlot = id;
-            document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${id}`).classList.add('active');
-            document.getElementById('control-panel').style.display = 'block';
-            document.getElementById('selected-title').innerText = `Koltuk ${id + 1} Seçildi`;
+            let b = document.createElement('button');
+            b.className = 'slot-btn'; b.innerText = `${i+1}. Koltuk`;
+            b.onclick = () => {
+                selectedSlot = i;
+                document.querySelectorAll('.slot-btn').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                document.getElementById('control-panel').style.display = 'block';
+            };
+            document.getElementById('grid').appendChild(b);
         }
 
         function manageUser() {
-            let username = prompt("Kişinin TikTok kullanıcı adını yazın (@ olmadan):");
-            if (username) {
+            let user = prompt("TikTok Kullanıcı Adı (@ olmadan):");
+            if(user) socket.emit('execute_visual', {action:'manage_slot', slot:selectedSlot, username:user});
+        }
+
+        function removeUser() {
+            socket.emit('execute_visual', {action:'manage_slot', slot:selectedSlot, name:null});
+        }
+
+        function sendGift(v) {
+            socket.emit('execute_visual', {action:'gift_trigger', slot:selectedSlot, value:v});
+        }
+    </script>
+</body>
+</html>
