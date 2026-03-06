@@ -6,12 +6,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { margin: 0; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000; font-family: sans-serif; overflow: hidden; }
         #guest-grid { 
             width: 180px; height: 440px; position: absolute; top: 40px; left: 220px; 
             display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 2px; 
         }
-        .slot { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        .slot { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .plus-icon { color: #444; font-size: 32px; font-weight: 200; }
         .req-text { color: #444; font-size: 11px; }
         .slot-score { 
@@ -32,7 +32,7 @@
         }
         .guest-name { 
             font-size: 9px; color: #fff; font-weight: 600; white-space: nowrap;
-            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+            font-family: 'Segoe UI Emoji', sans-serif;
         }
     </style>
 </head>
@@ -48,18 +48,15 @@
 
         socket.on('execute_visual', (data) => {
             const el = $(`#slot-${data.slot}`);
-            
             if(data.action === 'manage_slot') {
                 if(data.name && data.name !== "BOŞ") {
                     slotData[data.slot].name = data.name;
                     slotData[data.slot].score = 0;
                     
-                    // RESİM ÇÖZÜMÜ: Google Proxy (TikTok engelini aşar)
-                    let originalUrl = data.avatar || "";
+                    // PROXY ÇÖZÜMÜ: TikTok resim linkini weserv üzerinden çekiyoruz
                     let finalAvatar = "https://www.gravatar.com/avatar/0?d=mp"; 
-
-                    if(originalUrl && originalUrl.includes("http")) {
-                        finalAvatar = "https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=" + encodeURIComponent(originalUrl);
+                    if(data.avatar) {
+                        finalAvatar = `https://images.weserv.nl/?url=${encodeURIComponent(data.avatar)}&n=-1`;
                     }
 
                     el.html(`
@@ -76,9 +73,7 @@
 
             if(data.action === 'gift_trigger' && slotData[data.slot].name) {
                 let giftValue = (data.gift_type === 'lion') ? 29999 : Number(data.value || 0);
-                // Puan toplama garantisi:
-                slotData[data.slot].score = Number(slotData[data.slot].score) + giftValue;
-                
+                slotData[data.slot].score += giftValue;
                 let currentTotal = slotData[data.slot].score;
                 const formatted = currentTotal >= 1000 ? (currentTotal/1000).toFixed(1) + 'K' : currentTotal;
                 $(`#score-${data.slot}`).text(formatted);
