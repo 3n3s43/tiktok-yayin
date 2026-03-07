@@ -6,56 +6,101 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { margin: 0; background: #000; font-family: sans-serif; overflow: hidden; }
-        #guest-grid { width: 180px; height: 440px; position: absolute; top: 40px; left: 220px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 2px; }
-        .slot { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .plus-icon { color: #444; font-size: 32px; }
+        body { margin: 0; background: #000; font-family: sans-serif; overflow: hidden; width: 180px; height: 440px; }
+        #guest-grid { width: 180px; height: 440px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 2px; padding: 2px; box-sizing: border-box; }
+        .slot { background: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; border: 0.1px solid #111; }
+        .plus-icon { color: #444; font-size: 32px; font-weight: 200; }
         .req-text { color: #444; font-size: 11px; }
-        .slot-score { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.6); border-radius: 20px; padding: 2px 8px; display: flex; align-items: center; gap: 5px; z-index: 5; }
+        
+        /* Puan ve Elmas Kısmı */
+        .slot-score { 
+            position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.6); 
+            border-radius: 20px; padding: 2px 8px 2px 2px; display: flex; align-items: center; gap: 5px; z-index: 5; 
+        }
+        .diamond-icon { width: 15px; height: 15px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .diamond-icon::after {
+            content: ''; width: 9px; height: 9px; background: #00f2ff;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        }
         .score-val { font-size: 10px; color: #fff; font-weight: 600; }
+
+        /* Avatar ve İsim */
         .guest-avatar { width: 58px; height: 58px; border-radius: 50%; border: 1.5px solid #333; object-fit: cover; background: #1a1a1a; display: block; }
-        .info-pill { position: absolute; bottom: 8px; left: 6px; background: rgba(0,0,0,0.8); border-radius: 15px; padding: 2px 8px; display: flex; align-items: center; height: 19px; max-width: 85%; overflow: hidden; }
+        .info-pill {
+            position: absolute; bottom: 8px; left: 6px; background: rgba(0,0,0,0.8); 
+            border-radius: 15px; padding: 2px 8px; display: flex; align-items: center; height: 19px;
+            max-width: 85%; overflow: hidden;
+        }
         .guest-name { font-size: 9px; color: #fff; font-weight: 600; white-space: nowrap; font-family: 'Segoe UI Emoji', sans-serif; }
     </style>
 </head>
 <body>
     <div id="guest-grid"></div>
     <script>
-        const socket = io();
-        let slotData = Array(8).fill(null).map(() => ({ score: 0, name: null }));
+        const socket = io(); // Render'da aynı domainde olduğu için boş bırakılabilir
+        let seats = Array(8).fill(null).map(() => ({ score: 0, username: null }));
 
-        for(let i=0; i<8; i++) {
-            $('#guest-grid').append(`<div class="slot" id="slot-${i}"><div class="plus-icon">+</div><div class="req-text">Request</div></div>`);
+        function formatScore(score) {
+            if (score >= 1000) return (score / 1000).toFixed(1) + 'K';
+            return score;
         }
 
-        socket.on('execute_visual', (data) => {
-            const el = $(`#slot-${data.slot}`);
-            if(data.action === 'manage_slot') {
-                if(data.name && data.name !== "null") {
-                    slotData[data.slot].name = data.name;
-                    slotData[data.slot].score = 0;
-                    
-                    // 🔥 ÇİFT KATMANLI PROXY SİSTEMİ
-                    // Önce Weserv tüneli (Hızlı), hata verirse Google Proxy (Güçlü)
-                    let avatarUrl = data.avatar;
-                    if(avatarUrl) {
-                        avatarUrl = `https://images.weserv.nl/?url=${encodeURIComponent(avatarUrl)}&w=150&h=150&fit=cover&n=-1`;
-                    }
+        function createEmptySlot(i) {
+            return `<div class="slot" id="slot-${i}"><div class="plus-icon">+</div><div class="req-text">Request</div></div>`;
+        }
 
-                    el.html(`
-                        <div class="slot-score"><span class="score-val" id="score-${data.slot}">0</span></div>
-                        <img src="${avatarUrl}" class="guest-avatar" onerror="this.src='https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=${encodeURIComponent(data.avatar)}'">
-                        <div class="info-pill"><span class="guest-name">${data.name}</span></div>
-                    `);
+        function createFilledSlot(i, data) {
+            const avatar = data.avatarBase64 || 'https://www.gravatar.com/avatar/0?d=mp';
+            return `
+                <div class="slot" id="slot-${i}">
+                    <div class="slot-score">
+                        <div class="diamond-icon"></div>
+                        <span class="score-val" id="score-${i}">${formatScore(data.score)}</span>
+                    </div>
+                    <img src="${avatar}" class="guest-avatar">
+                    <div class="info-pill"><span class="guest-name">${data.username}</span></div>
+                </div>`;
+        }
+
+        function renderAll() {
+            const grid = $('#guest-grid');
+            grid.empty();
+            seats.forEach((seat, i) => {
+                if (seat && seat.username) {
+                    grid.append(createFilledSlot(i, seat));
                 } else {
-                    slotData[data.slot].name = null;
-                    el.html(`<div class="plus-icon">+</div><div class="req-text">Request</div>`);
+                    grid.append(createEmptySlot(i));
                 }
+            });
+        }
+
+        // İlk açılışta boş slotları çiz
+        renderAll();
+
+        // SUNUCUDAN GELEN SİNYALLER
+        socket.emit('register', { type: 'host' });
+
+        socket.on('fullSync', (data) => {
+            if (data.seats) {
+                seats = data.seats.map(s => s || { score: 0, username: null });
+                renderAll();
             }
-            if(data.action === 'gift_trigger' && slotData[data.slot].name) {
-                slotData[data.slot].score += Number(data.value || 0);
-                let total = slotData[data.slot].score;
-                $(`#score-${data.slot}`).text(total >= 1000 ? (total/1000).toFixed(1) + 'K' : total);
+        });
+
+        socket.on('seatUpdate', (data) => {
+            seats[data.seatIndex] = data.userData;
+            renderAll();
+        });
+
+        socket.on('seatClear', (data) => {
+            seats[data.seatIndex] = { score: 0, username: null };
+            renderAll();
+        });
+
+        socket.on('giftReceived', (data) => {
+            if (seats[data.seatIndex] && seats[data.seatIndex].username) {
+                seats[data.seatIndex].score += data.points;
+                $(`#score-${data.seatIndex}`).text(formatScore(seats[data.seatIndex].score));
             }
         });
     </script>
