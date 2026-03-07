@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TikTok Remote - Auto Nickname Pro</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; font-family: sans-serif; color: #fff; padding: 15px; }
+    .panel { background: #1a1a2e; border-radius: 12px; padding: 20px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    input, select { background: #0d0d1a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 14px; outline: none; }
+    .btn { background: #ff3b5c; color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
+    .btn:disabled { background: #555; opacity: 0.7; cursor: wait; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+    .card { background: #1a1a2e; border-radius: 8px; padding: 10px; border: 1px solid #333; display: flex; align-items: center; gap: 10px; position: relative; }
+    .avatar-mini { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ff3b5c; }
+    .nick-text { font-size: 11px; font-weight: bold; color: #FFD700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .del-btn { position: absolute; right: 5px; color: #ff3b5c; background: none; border: none; font-size: 18px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="panel">
+    <h3 style="font-size: 14px; margin-bottom: 15px; color: #ff3b5c; text-align: center;">OTOMATİK SÜSLÜ NICK BULUCU</h3>
+    <input type="text" id="userIn" placeholder="@kullanici_adi">
+    <select id="seatIn">
+      <option value="0">Koltuk 1</option><option value="1">Koltuk 2</option>
+      <option value="2">Koltuk 3</option><option value="3">Koltuk 4</option>
+      <option value="4">Koltuk 5</option><option value="5">Koltuk 6</option>
+      <option value="6">Koltuk 7</option><option value="7">Koltuk 8</option>
+    </select>
+    <button id="addBtn" class="btn" onclick="addPlayer()">KOLTUĞA OTURT</button>
+  </div>
+
+  <div class="grid" id="seatGrid"></div>
+
+<script>
+  const socket = io();
+  let seats = Array(8).fill(null);
+
+  async function addPlayer() {
+    const user = document.getElementById('userIn').value.trim().replace('@', '');
+    const idx = parseInt(document.getElementById('seatIn').value);
+    const btn = document.getElementById('addBtn');
+    
+    if (!user) return;
+    
+    btn.disabled = true;
+    btn.innerText = "NICKNAME SORGULANIYOR...";
+
+    let finalNickname = user; // Bulamazsa yedek
+
+    try {
+      // YENİ YÖNTEM: TikTok meta verilerini CORS engelini aşarak çeken bir API kullanıyoruz
+      const res = await fetch(`https://allorigins.win/get?url=${encodeURIComponent('https://www.tiktok.com/@' + user)}`);
+      const data = await res.json();
+      
+      // HTML içeriğinden 'title' etiketini buluyoruz. TikTok'ta title: "Süslü Nick (@kullaniciadi) | TikTok" şeklindedir.
+      const titleMatch = data.contents.match(/<title>(.*?) \(@/);
+      if (titleMatch && titleMatch[1]) {
+        finalNickname = titleMatch[1]; // İşte o emojili orijinal nickname!
+      }
+    } catch (e) {
+      console.log("Nickname çekilemedi, kullanıcı adı kullanılıyor.");
+    }
+
+    socket.emit('seatUpdate', {
+      seatIndex: idx,
+      userData: {
+        username: finalNickname, 
+        avatar: `https://unavatar.io/tiktok/${user}`,
+        score: 0
+      }
+    });
+
+    document.getElementById('userIn').value = '';
+    btn.disabled = false;
+    btn.innerText = "KOLTUĞA OTURT";
+  }
+
+  function render() {
+    document.getElementById('seatGrid').innerHTML = seats.map((s, i) => s ? `
+      <div class="card">
+        <img class="avatar-mini" src="${s.avatar}">
+        <div class="nick-text">${s.username}</div>
+        <button class="del-btn" onclick="clearSeat(${i})">×</button>
+      </div>` : `<div class="card" style="opacity:0.2; justify-content:center; font-size:10px;">${i+1}. BOŞ</div>`
+    ).join('');
+  }
+
+  function clearSeat(idx) { socket.emit('seatClear', { seatIndex: idx }); }
+  socket.on('fullSync', d => { seats = d.seats; render(); });
+  socket.on('seatUpdate', d => { seats[d.seatIndex] = d.userData; render(); });
+  socket.on('seatClear', d => { seats[d.seatIndex] = null; render(); });
+  render();
+</script>
+</body>
+</html>
