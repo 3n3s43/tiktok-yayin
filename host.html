@@ -1,238 +1,108 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>TikTok Live - 8 Koltuk Pro</title>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-    
-    body { 
-      width: 180px; 
-      height: 440px; 
-      background: transparent !important; 
-      font-family: -apple-system, system-ui, sans-serif; 
-      overflow: hidden; 
-    }
-
-    .container { 
-      width: 180px; 
-      height: 440px; 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; 
-      grid-template-rows: repeat(4, 1fr); 
-      gap: 4px; /* Koltuklar arası çok hafif boşluk */
-      position: absolute; 
-      top: 0; 
-      left: 0;
-    }
-
-    /* BOS KOLTUK */
-    .seat.empty { 
-      background: rgba(0, 0, 0, 0.6); 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      border-radius: 8px;
-    }
-    .plus-icon { 
-      color: #FFFFFF; 
-      font-size: 32px; 
-      font-weight: 200; 
-      opacity: 0.5;
-    }
-    .req-text { 
-      color: #FFFFFF; 
-      font-size: 9px; 
-      margin-top: -2px; 
-      opacity: 0.5; 
-      text-transform: uppercase;
-    }
-
-    /* DOLU KOLTUK */
-    .seat.occupied { 
-      background: rgba(0, 0, 0, 0.85); 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      position: relative; 
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    /* Üst Puan Tablosu */
-    .top-row { 
-      position: absolute; 
-      top: 5px; 
-      display: flex; 
-      align-items: center; 
-      gap: 3px; 
-      z-index: 10; 
-      background: rgba(0,0,0,0.5);
-      padding: 1px 6px;
-      border-radius: 10px;
-    }
-    .live-dot { 
-      width: 5px; 
-      height: 5px; 
-      background: #00e676; 
-      border-radius: 50%; 
-      box-shadow: 0 0 5px #00e676; 
-    }
-    .score-val { 
-      font-size: 10px; 
-      font-weight: 700; 
-      color: #fff; 
-    }
-
-    /* Avatar Tasarımı */
-    .avatar-container { 
-      width: 62px; 
-      height: 62px; 
-      position: relative; 
-      margin-top: 5px; 
-    }
-    .avatar-ring { 
-      position: absolute; 
-      inset: 0; 
-      border-radius: 50%; 
-      border: 2px solid #FFD700; /* Süslü isimle uyumlu altın rengi */
-      padding: 2px; 
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
-    }
-    .avatar-inner { 
-      width: 100%; 
-      height: 100%; 
-      border-radius: 50%; 
-      background: #111; 
-      overflow: hidden; 
-    }
-    .avatar { 
-      width: 100%; 
-      height: 100%; 
-      object-fit: cover; 
-    }
-
-    /* Alt İsim Bandı */
-    .bottom-row { 
-      position: absolute; 
-      bottom: 6px; 
-      display: flex; 
-      align-items: center; 
-      gap: 3px; 
-      background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 50%, rgba(0,0,0,0) 100%); 
-      padding: 2px 4px; 
-      width: 100%;
-      justify-content: center;
-    }
-    .username { 
-      font-size: 10px; 
-      font-weight: 700; 
-      color: #FFD700; /* Süslü isimler için altın sarısı */
-      max-width: 75px; 
-      overflow: hidden; 
-      text-overflow: ellipsis; 
-      white-space: nowrap; 
-      text-shadow: 1px 1px 2px #000;
-    }
-    .mic-icon svg { 
-      width: 9px; 
-      height: 9px; 
-      fill: #fff; 
-    }
-
-    /* Hediye Efekti */
-    .gift-anim { 
-      position: absolute; 
-      z-index: 999;
-      animation: giftPop 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
-      font-size: 40px; 
-      text-shadow: 0 0 15px rgba(255,255,255,0.5);
-    }
-    @keyframes giftPop { 
-      0% { transform: scale(0) rotate(-20deg); opacity: 0; } 
-      50% { transform: scale(1.5) rotate(10deg); opacity: 1; } 
-      100% { transform: translateY(-40px) scale(1); opacity: 0; } 
-    }
-  </style>
-</head>
-<body>
-  <div class="gift-overlay" id="giftOverlay"></div>
-  <div class="container" id="seatsContainer"></div>
-
-  <script>
-    const socket = io();
-    let seats = Array(8).fill(null);
-
-    function formatScore(s) {
-      if (s >= 1000000) return (s / 1000000).toFixed(1) + 'M';
-      if (s >= 1000) return (s / 1000).toFixed(1) + 'K';
-      return s;
-    }
-
-    const DEFAULT_AVATAR = 'https://www.tiktok.com/favicon.ico';
-
-    function renderSeats() {
-      const container = document.getElementById('seatsContainer');
-      container.innerHTML = seats.map((seat, index) => {
-        if (!seat) {
-          return `<div class="seat empty"><div class="plus-icon">+</div><div class="req-text">Boş</div></div>`;
+    <meta charset="UTF-8">
+    <title>Tiktok Live Host - Pro Final</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* 📍 ANA OMURGA - DEĞİŞMEZ SİYAH ARKA PLAN */
+        html, body { 
+            margin: 0; padding: 0;
+            background-color: #000000 !important; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            overflow: hidden; 
+            width: 100vw; height: 100vh; 
         }
         
-        const avatarSrc = seat.avatar || DEFAULT_AVATAR;
+        /* 📍 SABİT KOORDİNATLAR */
+        #guest-grid { 
+            width: 180px; height: 440px; 
+            position: absolute; top: 135px; left: 215px; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            grid-template-rows: repeat(4, 1fr); 
+            gap: 0px; background: #000000 !important; 
+            box-sizing: border-box; z-index: 10;
+        }
+
+        .slot { 
+            background: #000000 !important; 
+            position: relative; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; overflow: hidden;
+        }
+
+        .plus-icon { color: #FFFFFF; font-size: 32px; font-weight: 200; line-height: 1; }
+        .req-text { color: #FFFFFF; font-size: 11px; font-weight: 400; margin-top: -2px; }
         
-        return `
-          <div class="seat occupied">
-            <div class="top-row">
-              <div class="live-dot"></div>
-              <span class="score-val">${formatScore(seat.score || 0)}</span>
-            </div>
-            <div class="avatar-container">
-              <div class="avatar-ring">
-                <div class="avatar-inner">
-                  <img class="avatar" src="${avatarSrc}" onerror="this.src='${DEFAULT_AVATAR}'">
-                </div>
-              </div>
-            </div>
-            <div class="bottom-row">
-              <span class="username">${seat.username}</span>
-              <div class="mic-icon">
-                <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/></svg>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
+        /* Skor Tabelası */
+        .slot-score { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.6); border-radius: 20px; padding: 2px 8px; z-index: 15; }
+        .score-val { font-size: 10px; color: #fff; font-weight: 600; }
 
-    function showGift(index) {
-      const container = document.getElementById('seatsContainer').children[index];
-      const emojiList = ['🎁', '💎', '🔥', '👑', '🦁', '🚀'];
-      const randomEmoji = emojiList[Math.floor(Math.random() * emojiList.length)];
-      
-      const el = document.createElement('div');
-      el.className = 'gift-anim';
-      el.textContent = randomEmoji;
-      el.style.left = "25%";
-      el.style.top = "20%";
-      container.appendChild(el);
-      setTimeout(() => el.remove(), 1200);
-    }
+        .guest-avatar { width: 58px; height: 58px; border-radius: 50%; border: 1.5px solid #333; object-fit: cover; z-index: 12; }
+        
+        /* 💎 SÜSLÜ NICKNAME BANDI (Geliştirildi) */
+        .info-pill { 
+            position: absolute; bottom: 8px; 
+            background: rgba(0,0,0,0.85); 
+            border-radius: 15px; padding: 2px 10px; 
+            max-width: 88%; z-index: 15; 
+            height: 20px; display: flex; align-items: center; justify-content: center;
+            border: 0.5px solid rgba(255,255,255,0.1);
+        }
+        .guest-name { 
+            font-size: 9px; color: #fff; font-weight: 600; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
 
-    socket.on('fullSync', (data) => { seats = data.seats || Array(8).fill(null); renderSeats(); });
-    socket.on('seatUpdate', (data) => { seats[data.seatIndex] = data.userData; renderSeats(); });
-    socket.on('seatClear', (data) => { seats[data.seatIndex] = null; renderSeats(); });
-    socket.on('giftReceived', (data) => {
-      if (seats[data.seatIndex]) {
-        seats[data.seatIndex].score = (seats[data.seatIndex].score || 0) + data.points;
-        showGift(data.seatIndex);
-        renderSeats();
-      }
-    });
+    <div id="guest-grid">
+        <script>
+            for(let i=0; i<8; i++) {
+                document.write(`<div class="slot" id="slot-${i}"><div class="plus-icon">+</div><div class="req-text">Request</div></div>`);
+            }
+        </script>
+    </div>
 
-    renderSeats();
-  </script>
+    <script>
+        const socket = io();
+        let seats = Array(8).fill(null);
+
+        // Nickname'i temizleme ve emoji desteği için yardımcı fonksiyon
+        function formatNick(nick) {
+            if(!nick) return "";
+            return nick; // Emojileri tarayıcı zaten tanır, biz sadece taşmayı engelledik
+        }
+
+        function updateUI() {
+            seats.forEach((seat, i) => {
+                const slot = $(`#slot-${i}`);
+                if (seat && seat.username) {
+                    const displayScore = seat.score >= 1000 ? (seat.score/1000).toFixed(1)+'K' : (seat.score || 0);
+                    
+                    slot.html(`
+                        <div class="slot-score"><span class="score-val">${displayScore}</span></div>
+                        <img src="${seat.avatar || ''}" class="guest-avatar">
+                        <div class="info-pill"><span class="guest-name">${formatNick(seat.username)}</span></div>
+                    `);
+                } else {
+                    slot.html(`<div class="plus-icon">+</div><div class="req-text">Request</div>`);
+                }
+            });
+        }
+
+        socket.on('fullSync', (data) => { if(data && data.seats){ seats = data.seats; updateUI(); } });
+        socket.on('seatUpdate', (data) => { seats[data.seatIndex] = data.userData; updateUI(); });
+        socket.on('seatClear', (data) => { seats[data.seatIndex] = null; updateUI(); });
+        socket.on('giftReceived', (data) => { 
+            if(seats[data.seatIndex]) { 
+                seats[data.seatIndex].score = (seats[data.seatIndex].score || 0) + data.points; 
+                updateUI(); 
+            } 
+        });
+    </script>
 </body>
 </html>
