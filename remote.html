@@ -3,96 +3,145 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>TikTok Remote - Auto Nickname Pro</title>
+  <title>TikTok Live Remote - Pro</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a0f; font-family: sans-serif; color: #fff; padding: 15px; }
-    .panel { background: #1a1a2e; border-radius: 12px; padding: 20px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    input, select { background: #0d0d1a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 14px; outline: none; }
-    .btn { background: #ff3b5c; color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
-    .btn:disabled { background: #555; opacity: 0.7; cursor: wait; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-    .card { background: #1a1a2e; border-radius: 8px; padding: 10px; border: 1px solid #333; display: flex; align-items: center; gap: 10px; position: relative; }
-    .avatar-mini { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ff3b5c; }
-    .nick-text { font-size: 11px; font-weight: bold; color: #FFD700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .del-btn { position: absolute; right: 5px; color: #ff3b5c; background: none; border: none; font-size: 18px; cursor: pointer; }
+    body { background: #0a0a0f; font-family: sans-serif; color: #fff; padding: 10px; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #1a1a2e; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333; }
+    .status { font-size: 11px; display: flex; align-items: center; gap: 5px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b5c; }
+    .dot.on { background: #00d4aa; box-shadow: 0 0 8px #00d4aa; }
+    .panel { background: #1a1a2e; border-radius: 10px; padding: 15px; margin-bottom: 10px; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; }
+    input, select { background: #0d0d1a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; flex: 1; }
+    .btn { background: #ff3b5c; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
+    .btn:disabled { background: #555; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .card { background: #1a1a2e; border-radius: 8px; padding: 10px; border: 1px solid #333; position: relative; }
+    .card.full { border-color: #ff3b5c; }
+    .num { position: absolute; top: 5px; left: 5px; font-size: 10px; color: #888; }
+    .info { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+    .avatar { width: 35px; height: 35px; border-radius: 50%; background: #333; object-fit: cover; }
+    .nick { font-size: 11px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #FFD700; }
+    .score { font-size: 10px; color: #00d4aa; }
+    .del { background: #333; color: #ccc; border: none; padding: 5px; border-radius: 4px; font-size: 10px; width: 100%; margin-top: 8px; cursor: pointer; }
+    .gifts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
+    .gift-btn { background: #0d0d1a; border: 1px solid #333; padding: 8px; border-radius: 8px; text-align: center; cursor: pointer; }
+    .gift-btn.active { border-color: #ff3b5c; background: rgba(255,59,92,0.1); }
   </style>
 </head>
 <body>
 
+  <div class="header">
+    <h1 style="font-size: 14px; color: #ff3b5c;">KUMANDA PANELI</h1>
+    <div class="status">
+      <div id="dot" class="dot"></div> 
+      <span id="stat">Baglaniyor...</span>
+    </div>
+  </div>
+
   <div class="panel">
-    <h3 style="font-size: 14px; margin-bottom: 15px; color: #ff3b5c; text-align: center;">OTOMATİK SÜSLÜ NICK BULUCU</h3>
-    <input type="text" id="userIn" placeholder="@kullanici_adi">
-    <select id="seatIn">
-      <option value="0">Koltuk 1</option><option value="1">Koltuk 2</option>
-      <option value="2">Koltuk 3</option><option value="3">Koltuk 4</option>
-      <option value="4">Koltuk 5</option><option value="5">Koltuk 6</option>
-      <option value="6">Koltuk 7</option><option value="7">Koltuk 8</option>
-    </select>
-    <button id="addBtn" class="btn" onclick="addPlayer()">KOLTUĞA OTURT</button>
+    <div class="row">
+      <input type="text" id="userIn" placeholder="@kullanici_adi">
+      <select id="seatIn" style="max-width: 90px;">
+        <option value="0">Koltuk 1</option><option value="1">Koltuk 2</option>
+        <option value="2">Koltuk 3</option><option value="3">Koltuk 4</option>
+        <option value="4">Koltuk 5</option><option value="5">Koltuk 6</option>
+        <option value="6">Koltuk 7</option><option value="7">Koltuk 8</option>
+      </select>
+    </div>
+    <button id="addBtn" class="btn" onclick="addPlayer()">KOLTUGA OTURT</button>
   </div>
 
   <div class="grid" id="seatGrid"></div>
 
+  <div class="panel" style="margin-top:10px;">
+    <div class="gifts" id="giftGrid"></div>
+    <div class="row" style="margin-top:10px;">
+      <select id="target" style="flex:2;"><option value="">Koltuk Sec...</option></select>
+      <button class="btn" style="flex:1;" onclick="sendG()">GONDER</button>
+    </div>
+  </div>
+
 <script>
   const socket = io();
   let seats = Array(8).fill(null);
+  let selGift = 'lion';
+  const GIFTS = [
+    { id: 'lion', e: '🦁', p: 29999 }, { id: 'crown', e: '👑', p: 10000 },
+    { id: 'diamond', e: '💎', p: 5000 }, { id: 'fire', e: '🔥', p: 1000 },
+    { id: 'star', e: '⭐', p: 500 }, { id: 'heart', e: '❤️', p: 100 },
+    { id: 'rose', e: '🌹', p: 50 }, { id: 'rocket', e: '🚀', p: 2000 }
+  ];
 
   async function addPlayer() {
     const user = document.getElementById('userIn').value.trim().replace('@', '');
     const idx = parseInt(document.getElementById('seatIn').value);
     const btn = document.getElementById('addBtn');
     
-    if (!user) return;
-    
+    if (!user) return alert('Kullanici adi girin!');
     btn.disabled = true;
-    btn.innerText = "NICKNAME SORGULANIYOR...";
+    btn.innerText = "Araniyor...";
 
-    let finalNickname = user; // Bulamazsa yedek
-
+    // 1. ADIM: Profil Resmini Al
+    const avatar = `https://unavatar.io/tiktok/${user}`;
+    
+    // 2. ADIM: Orijinal Nickname'i Denemeye Çaliş (Scraping)
+    let finalNickname = user; 
     try {
-      // YENİ YÖNTEM: TikTok meta verilerini CORS engelini aşarak çeken bir API kullanıyoruz
-      const res = await fetch(`https://allorigins.win/get?url=${encodeURIComponent('https://www.tiktok.com/@' + user)}`);
+      const res = await fetch(`https://unavatar.io/tiktok/${user}?json=true`);
       const data = await res.json();
-      
-      // HTML içeriğinden 'title' etiketini buluyoruz. TikTok'ta title: "Süslü Nick (@kullaniciadi) | TikTok" şeklindedir.
-      const titleMatch = data.contents.match(/<title>(.*?) \(@/);
-      if (titleMatch && titleMatch[1]) {
-        finalNickname = titleMatch[1]; // İşte o emojili orijinal nickname!
+      if (data.name && data.name !== user) {
+        finalNickname = data.name; // İşte TikTok'taki emojili isim!
       }
-    } catch (e) {
-      console.log("Nickname çekilemedi, kullanıcı adı kullanılıyor.");
-    }
+    } catch (e) { console.log("Nickname cekilemedi."); }
 
     socket.emit('seatUpdate', {
       seatIndex: idx,
-      userData: {
-        username: finalNickname, 
-        avatar: `https://unavatar.io/tiktok/${user}`,
-        score: 0
-      }
+      userData: { username: finalNickname, avatar: avatar, score: 0 }
     });
-
+    
     document.getElementById('userIn').value = '';
     btn.disabled = false;
-    btn.innerText = "KOLTUĞA OTURT";
+    btn.innerText = "KOLTUGA OTURT";
   }
 
   function render() {
-    document.getElementById('seatGrid').innerHTML = seats.map((s, i) => s ? `
-      <div class="card">
-        <img class="avatar-mini" src="${s.avatar}">
-        <div class="nick-text">${s.username}</div>
-        <button class="del-btn" onclick="clearSeat(${i})">×</button>
-      </div>` : `<div class="card" style="opacity:0.2; justify-content:center; font-size:10px;">${i+1}. BOŞ</div>`
-    ).join('');
+    const grid = document.getElementById('seatGrid');
+    const target = document.getElementById('target');
+    grid.innerHTML = '';
+    target.innerHTML = '<option value="">Hediye Icin Sec...</option>';
+
+    seats.forEach((s, i) => {
+      if (s) {
+        grid.innerHTML += `<div class="card full"><span class="num">${i + 1}</span><div class="info"><img class="avatar" src="${s.avatar}"><div style="min-width:0"><div class="nick">${s.username}</div><div class="score">${s.score} Puan</div></div></div><button class="del" onclick="clearSeat(${i})">KALDIR</button></div>`;
+        target.innerHTML += `<option value="${i}">${i + 1}. ${s.username}</option>`;
+      } else {
+        grid.innerHTML += `<div class="card"><span class="num">${i + 1}</span><div style="color:#333;padding:10px 0;text-align:center;font-size:11px;">BOS</div></div>`;
+      }
+    });
+
+    document.getElementById('giftGrid').innerHTML = GIFTS.map(g => `
+      <div class="gift-btn ${selGift === g.id ? 'active' : ''}" onclick="selGift='${g.id}';render();">
+        <div style="font-size:20px;">${g.e}</div>
+        <div style="font-size:9px;color:#888;">${g.p}</div>
+      </div>`).join('');
   }
 
   function clearSeat(idx) { socket.emit('seatClear', { seatIndex: idx }); }
+  function sendG() {
+    const idx = document.getElementById('target').value;
+    if (idx === '') return alert('Koltuk sec!');
+    const g = GIFTS.find(x => x.id === selGift);
+    socket.emit('giftReceived', { seatIndex: parseInt(idx), giftType: g.id, points: g.p });
+  }
+
+  socket.on('connect', () => { document.getElementById('dot').className = 'dot on'; document.getElementById('stat').innerText = 'Bagli'; });
   socket.on('fullSync', d => { seats = d.seats; render(); });
   socket.on('seatUpdate', d => { seats[d.seatIndex] = d.userData; render(); });
   socket.on('seatClear', d => { seats[d.seatIndex] = null; render(); });
+  socket.on('giftReceived', d => { if (seats[d.seatIndex]) { seats[d.seatIndex].score += d.points; render(); } });
   render();
 </script>
 </body>
